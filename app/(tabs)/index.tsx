@@ -26,7 +26,7 @@ import { analyzeImageWithGemini } from '../../utils/geminiService';
 const Tab = createBottomTabNavigator();
 
 // --- CAMERA SCREEN COMPONENT ---
-function CameraScreen() {
+function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) => void }) {
   const initialState = { text: "", status: "gray" };
 
   const [foodAnalysis, setFoodAnalysis] = useState(initialState);
@@ -93,6 +93,7 @@ function CameraScreen() {
 
   const handleScan = async (base64Data: string) => {
     setIsLoading(true);
+    onImageCaptured(base64Data);
     try {
       const [foodRes, skinRes, vegRes, veganRes, halalRes, alcoholRes] = await Promise.all([
         analyzeImageWithGemini(base64Data, 'food'),
@@ -171,8 +172,9 @@ function CameraScreen() {
 // --- NAVIGATION WRAPPER (AppContent & App as before) ---
 function AppContent() {
   const insets = useSafeAreaInsets();
+  const [scannedImage, setScannedImage] = useState<string | null>(null);
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
+<View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <Tab.Navigator
         screenOptions={({ route }) => ({
@@ -196,14 +198,22 @@ function AppContent() {
             return <Ionicons name={iconName} size={size + 2} color={color} />;
           },
         })}
-      >
-        <Tab.Screen name="Camera" component={CameraScreen} />
-        <Tab.Screen name="Ingredients" component={Ingredients} />
-        <Tab.Screen name="Shop" component={Shop} />
-      </Tab.Navigator>
-    </View>
-  );
-}
+        >
+          {/* 2. Pass the setter to CameraScreen */}
+          <Tab.Screen name="Camera">
+            {() => <CameraScreen onImageCaptured={setScannedImage} />}
+          </Tab.Screen>
+
+          {/* 3. Pass the image to Ingredients */}
+          <Tab.Screen name="Ingredients">
+            {() => <Ingredients imageUri={scannedImage} />}
+          </Tab.Screen>
+
+          <Tab.Screen name="Shop" component={Shop} />
+        </Tab.Navigator>
+      </View>
+    );
+  }
 
 export default function App() {
   return (
