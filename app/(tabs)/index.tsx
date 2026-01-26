@@ -1,5 +1,5 @@
 import { Camera } from 'expo-camera';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { ComponentProps, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -17,7 +17,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Local Imports
+// Local Imports (Ensure these paths match your project structure)
 import Ingredients from '../../components/Ingredients';
 import Scanner from '../../components/Scanner';
 import Shop from '../../components/Shop';
@@ -25,16 +25,100 @@ import { analyzeImageWithGemini } from '../../utils/geminiService';
 
 const Tab = createBottomTabNavigator();
 
-// --- CAMERA SCREEN COMPONENT ---
-function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) => void }) {
-  const initialState = { text: "", status: "gray" };
+// Types for Icons and State
+type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
-  const [foodAnalysis, setFoodAnalysis] = useState(initialState);
-  const [skinAnalysis, setSkinAnalysis] = useState(initialState);
-  const [vegAnalysis, setVegAnalysis] = useState(initialState);
-  const [veganAnalysis, setVeganAnalysis] = useState(initialState);
-  const [halalAnalysis, setHalalAnalysis] = useState(initialState);
-  const [alcoholFreeAnalysis, setAlcoholFreeAnalysis] = useState(initialState);
+interface AnalysisState {
+  text: string;
+  status: string;
+}
+
+interface StatusCardProps {
+  title: string;
+  data: AnalysisState;
+  icon: MaterialIconName;
+  isParentLoading: boolean;
+}
+
+// --- STATUS CARD SUB-COMPONENT ---
+const StatusCard = ({ title, data, icon, isParentLoading }: StatusCardProps) => {
+  const [showSummary, setShowSummary] = useState(false);
+  const hasData = !!data.text;
+  const isPending = isParentLoading && !hasData;
+
+  useEffect(() => {
+    if (!hasData) setShowSummary(false);
+  }, [hasData]);
+
+  const getSummaryText = (jsonString: string) => {
+    try {
+      if (!jsonString) return "";
+      const parsed = JSON.parse(jsonString);
+      return parsed.summary || jsonString;
+    } catch { return jsonString; }
+  };
+
+  const getStatusText = (jsonString: string) => {
+    if (isPending) return "Analyzing...";
+    try {
+      if (!jsonString) return "Waiting...";
+      const parsed = JSON.parse(jsonString);
+      return parsed.status || "Pending";
+    } catch { return "Pending"; }
+  };
+
+  return (
+    <TouchableOpacity
+      activeOpacity={hasData ? 0.7 : 1}
+      onPress={() => hasData && setShowSummary(!showSummary)}
+      style={[styles.card, styles.shadow]}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.iconCircle}>
+          <MaterialCommunityIcons name={icon} size={22} color="#4CAF50" />
+        </View>
+        <View style={styles.titleColumn}>
+          <Text style={styles.cardLabel}>{title}</Text>
+          <View style={[styles.statusPill, { backgroundColor: isPending ? '#F5F5F5' : data.status + '15' }]}>
+            {isPending ? (
+              <ActivityIndicator size="small" color="#4CAF50" style={{ marginRight: 6, transform: [{ scale: 0.7 }] }} />
+            ) : (
+              <View style={[styles.dot, { backgroundColor: data.status || '#757575' }]} />
+            )}
+            <Text style={[styles.statusValue, { color: isPending ? '#9E9E9E' : (data.status || '#757575') }]}>
+              {getStatusText(data.text)}
+            </Text>
+          </View>
+        </View>
+        {hasData && (
+          <Ionicons name={showSummary ? "chevron-up" : "chevron-down"} size={20} color="#CCC" />
+        )}
+      </View>
+      {showSummary && (
+        <View style={styles.summaryContainer}>
+          <Text style={styles.analysisText}>{getSummaryText(data.text)}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  );
+};
+
+interface CameraScreenProps {
+  onImageCaptured: (base64: string) => void;
+}
+
+// --- CAMERA SCREEN COMPONENT ---
+function CameraScreen({ onImageCaptured }: CameraScreenProps) {
+  const initialState: AnalysisState = { text: "", status: "gray" };
+  const lastImageRef = useRef<string | null>(null);
+
+  const [foodAnalysis, setFoodAnalysis] = useState<AnalysisState>(initialState);
+  const [skinAnalysis, setSkinAnalysis] = useState<AnalysisState>(initialState);
+  const [vegAnalysis, setVegAnalysis] = useState<AnalysisState>(initialState);
+  const [veganAnalysis, setVeganAnalysis] = useState<AnalysisState>(initialState);
+  const [halalAnalysis, setHalalAnalysis] = useState<AnalysisState>(initialState);
+  const [alcoholFreeAnalysis, setAlcoholFreeAnalysis] = useState<AnalysisState>(initialState);
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -62,6 +146,7 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
   }, [isLoading]);
 
   const handleReset = () => {
+    lastImageRef.current = null;
     setFoodAnalysis(initialState);
     setSkinAnalysis(initialState);
     setVegAnalysis(initialState);
@@ -70,11 +155,6 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
     setAlcoholFreeAnalysis(initialState);
   };
 
-  const translateY = scanLineAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 200],
-  });
-
   const getStatusColor = (jsonString: string) => {
     try {
       const parsed = JSON.parse(jsonString);
@@ -82,7 +162,7 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
       if (status === "UNSAFE") return "#FF5252";
       if (status === "CAUTION") return "#FFB300";
       if (status === "SAFE") return "#2E7D32";
-    } catch (e) {
+    } catch {
       const upper = jsonString.toUpperCase();
       if (upper.includes("UNSAFE")) return "#FF5252";
       if (upper.includes("CAUTION")) return "#FFB300";
@@ -93,29 +173,49 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
 
   const handleScan = async (base64Data: string) => {
     setIsLoading(true);
+    lastImageRef.current = base64Data;
     onImageCaptured(base64Data);
-    try {
-      const [foodRes, skinRes, vegRes, veganRes, halalRes, alcoholRes] = await Promise.all([
-        analyzeImageWithGemini(base64Data, 'food'),
-        analyzeImageWithGemini(base64Data, 'skin'),
-        analyzeImageWithGemini(base64Data, 'veg'),
-        analyzeImageWithGemini(base64Data, 'vegan'),
-        analyzeImageWithGemini(base64Data, 'halal'),
-        analyzeImageWithGemini(base64Data, 'alcohol')
-      ]);
 
-      setFoodAnalysis({ text: foodRes, status: getStatusColor(foodRes) });
-      setSkinAnalysis({ text: skinRes, status: getStatusColor(skinRes) });
-      setVegAnalysis({ text: vegRes, status: getStatusColor(vegRes) });
-      setVeganAnalysis({ text: veganRes, status: getStatusColor(veganRes) });
-      setHalalAnalysis({ text: halalRes, status: getStatusColor(halalRes) });
-      setAlcoholFreeAnalysis({ text: alcoholRes, status: getStatusColor(alcoholRes) });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
+    const runQuery = async (category: string, setter: React.Dispatch<React.SetStateAction<AnalysisState>>) => {
+      try {
+        const res = await analyzeImageWithGemini(base64Data, category);
+        setter({ text: res, status: getStatusColor(res) });
+      } catch (e) {
+        setter({ text: "Request failed", status: "#757575" });
+      }
+    };
+
+    await Promise.allSettled([
+      runQuery('food', setFoodAnalysis),
+      runQuery('skin', setSkinAnalysis),
+      runQuery('veg', setVegAnalysis),
+      runQuery('vegan', setVeganAnalysis),
+      runQuery('halal', setHalalAnalysis),
+      runQuery('alcohol', setAlcoholFreeAnalysis)
+    ]);
+
+    setIsLoading(false);
+  };
+
+  const handleRerun = () => {
+    if (lastImageRef.current) {
+      // 1. Reset all card states to initialState immediately
+      setFoodAnalysis(initialState);
+      setSkinAnalysis(initialState);
+      setVegAnalysis(initialState);
+      setVeganAnalysis(initialState);
+      setHalalAnalysis(initialState);
+      setAlcoholFreeAnalysis(initialState);
+
+      // 2. Trigger the scan logic with the saved image
+      handleScan(lastImageRef.current);
     }
   };
+
+  const translateY = scanLineAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 200],
+  });
 
   return (
     <View style={styles.cameraTabContainer}>
@@ -143,38 +243,46 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
       <View style={styles.resultsHalf}>
         <View style={styles.headerRow}>
           <Text style={styles.resultsHeader}>Analysis Results</Text>
-          <TouchableOpacity
-            onPress={handleReset}
-            style={styles.resetButton}
-            activeOpacity={0.6}
-          >
-            <Ionicons name="refresh" size={16} color="#2E7D32" />
-            <Text style={styles.resetText}>Reset</Text>
-          </TouchableOpacity>
+          <View style={styles.buttonGroup}>
+            {lastImageRef.current && !isLoading && (
+              <TouchableOpacity onPress={handleRerun} style={[styles.actionButton, { marginRight: 8 }]}>
+                <Ionicons name="play-outline" size={16} color="#2E7D32" />
+                <Text style={styles.actionText}>Re-run</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={handleReset} style={styles.actionButton}>
+              <Ionicons name="refresh" size={16} color="#2E7D32" />
+              <Text style={styles.actionText}>Reset</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollPadding}
-          showsVerticalScrollIndicator={false}
-        >
-          <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" />
-          <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" />
-          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" />
-          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" />
-          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" />
-          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" />
+        <ScrollView contentContainerStyle={styles.scrollPadding} showsVerticalScrollIndicator={false}>
+          <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
+          <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} />
+          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} />
+          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} />
+          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} />
         </ScrollView>
       </View>
     </View>
   );
 }
 
-// --- NAVIGATION WRAPPER (AppContent & App as before) ---
+// --- MAIN NAVIGATION WRAPPER ---
 function AppContent() {
   const insets = useSafeAreaInsets();
   const [scannedImage, setScannedImage] = useState<string | null>(null);
+
+  const iconMap: Record<string, IoniconsName> = {
+    Camera: 'camera-outline',
+    Ingredients: 'nutrition-outline',
+    Shop: 'cart-outline',
+  };
+
   return (
-<View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <Tab.Navigator
         screenOptions={({ route }) => ({
@@ -191,29 +299,22 @@ function AppContent() {
             ...styles.shadow
           },
           tabBarIcon: ({ color, size }) => {
-            let iconName: any;
-            if (route.name === 'Camera') iconName = 'camera-outline';
-            else if (route.name === 'Ingredients') iconName = 'nutrition-outline';
-            else if (route.name === 'Shop') iconName = 'cart-outline';
+            const iconName = iconMap[route.name] || 'help-circle-outline';
             return <Ionicons name={iconName} size={size + 2} color={color} />;
           },
         })}
-        >
-          {/* 2. Pass the setter to CameraScreen */}
-          <Tab.Screen name="Camera">
-            {() => <CameraScreen onImageCaptured={setScannedImage} />}
-          </Tab.Screen>
-
-          {/* 3. Pass the image to Ingredients */}
-          <Tab.Screen name="Ingredients">
-            {() => <Ingredients imageUri={scannedImage} />}
-          </Tab.Screen>
-
-          <Tab.Screen name="Shop" component={Shop} />
-        </Tab.Navigator>
-      </View>
-    );
-  }
+      >
+        <Tab.Screen name="Camera">
+          {() => <CameraScreen onImageCaptured={setScannedImage} />}
+        </Tab.Screen>
+        <Tab.Screen name="Ingredients">
+          {() => <Ingredients imageUri={scannedImage} />}
+        </Tab.Screen>
+        <Tab.Screen name="Shop" component={Shop} />
+      </Tab.Navigator>
+    </View>
+  );
+}
 
 export default function App() {
   return (
@@ -222,59 +323,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
-
-// --- STATUS CARD SUB-COMPONENT ---
-const StatusCard = ({ title, data, icon }: { title: string, data: any, icon: string }) => {
-  const [showSummary, setShowSummary] = useState(false);
-  const hasData = !!data.text;
-
-  // Reset expansion when data is cleared
-  useEffect(() => {
-    if (!hasData) setShowSummary(false);
-  }, [hasData]);
-
-  const getSummaryText = (jsonString: string) => {
-    try { if (!jsonString) return ""; const parsed = JSON.parse(jsonString); return parsed.summary || jsonString; } catch { return jsonString; }
-  };
-  const getStatusText = (jsonString: string) => {
-    try { if (!jsonString) return ""; const parsed = JSON.parse(jsonString); return parsed.status || "Pending"; } catch { return "Pending"; }
-  };
-
-  return (
-    <TouchableOpacity
-      activeOpacity={hasData ? 0.7 : 1}
-      onPress={() => hasData && setShowSummary(!showSummary)}
-      style={[styles.card, styles.shadow]}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconCircle}>
-           <MaterialCommunityIcons name={icon as any} size={22} color="#4CAF50" />
-        </View>
-        <View style={styles.titleColumn}>
-          <Text style={styles.cardLabel}>{title}</Text>
-          <View style={[styles.statusPill, { backgroundColor: data.status + '15' }]}>
-            <View style={[styles.dot, { backgroundColor: data.status }]} />
-            <Text style={[styles.statusValue, { color: data.status }]}>
-              {getStatusText(data.text)}
-            </Text>
-          </View>
-        </View>
-        {hasData && (
-          <Ionicons
-            name={showSummary ? "chevron-up" : "chevron-down"}
-            size={20}
-            color="#CCC"
-          />
-        )}
-      </View>
-      {showSummary && (
-        <View style={styles.summaryContainer}>
-          <Text style={styles.analysisText}>{getSummaryText(data.text)}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
 
 const styles = StyleSheet.create({
   shadow: {
@@ -306,7 +354,11 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
     letterSpacing: -0.5,
   },
-  resetButton: {
+  buttonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#E8F5E9',
@@ -314,7 +366,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  resetText: {
+  actionText: {
     fontSize: 12,
     fontWeight: '700',
     color: '#2E7D32',
@@ -330,7 +382,6 @@ const styles = StyleSheet.create({
   scanLine: { height: 3, backgroundColor: '#4CAF50', width: '100%', borderRadius: 2 },
   placeholderCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollPadding: { paddingBottom: 30 },
-
   card: {
     backgroundColor: '#fff',
     borderRadius: 18,
