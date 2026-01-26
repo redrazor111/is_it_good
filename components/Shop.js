@@ -1,19 +1,28 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Shop() {
   const insets = useSafeAreaInsets();
   const trackingId = "softywareai-21";
-  const amazonUrl = `https://www.amazon.co.uk/?tag=${trackingId}`;
 
   const handleOpenAmazon = async () => {
-    const supported = await Linking.canOpenURL(amazonUrl);
-    if (supported) {
-      await Linking.openURL(amazonUrl);
-    } else {
-      console.log("Don't know how to open URI: " + amazonUrl);
+    const intentUri = `com.amazon.mobile.shopping://www.amazon.co.uk/?tag=${trackingId}`;
+    const webUri = `https://www.amazon.co.uk/?tag=${trackingId}`;
+
+    try {
+      if (Platform.OS === 'android') {
+        const canOpen = await Linking.canOpenURL(intentUri);
+        if (canOpen) {
+          await Linking.openURL(intentUri);
+          return;
+        }
+      }
+      // Fallback if the app isn't installed
+      await Linking.openURL(webUri);
+    } catch (error) {
+      Linking.openURL(webUri);
     }
   };
 
@@ -36,7 +45,6 @@ export default function Shop() {
         </View>
       </ScrollView>
 
-      {/* COMPLIANCE FOOTER: Amazon requires this disclosure */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
         <Text style={styles.disclosureText}>
           As an Amazon Associate, I earn from qualifying purchases.

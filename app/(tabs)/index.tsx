@@ -171,12 +171,14 @@ function CameraScreen({ onImageCaptured }: CameraScreenProps) {
     return "#757575";
   };
 
+  type AnalysisCategory = "food" | "skin" | "veg" | "vegan" | "halal" | "alcohol";
+
   const handleScan = async (base64Data: string) => {
     setIsLoading(true);
     lastImageRef.current = base64Data;
     onImageCaptured(base64Data);
 
-    const runQuery = async (category: string, setter: React.Dispatch<React.SetStateAction<AnalysisState>>) => {
+    const runQuery = async (category: AnalysisCategory, setter: React.Dispatch<React.SetStateAction<AnalysisState>>) => {
       try {
         const res = await analyzeImageWithGemini(base64Data, category);
         setter({ text: res, status: getStatusColor(res) });
