@@ -49,11 +49,10 @@ export default async function handler(req: any, res: any) {
     1. Identify the specific product name from the image.
     2. Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
     3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
-
     4. RECOMMENDATIONS:
-      - Provide the EXACT name of the identified product you identified in the image.
-      - Suggest FOUR (4) highly-rated safe alternatives on Amazon UK.
-      - For EACH of the 5 items, provide the valid Amazon ASIN.
+      - First, provide the EXACT name of the product you identified in the image.
+      - Second, suggest FOUR (4) highly-rated alternatives available on Amazon UK that are similar to this product.
+
     Return ONLY a JSON object:
     {
       "identifiedProduct": "Exact Product Name",
@@ -63,12 +62,7 @@ export default async function handler(req: any, res: any) {
       "vegan": {"status": "string", "summary": "string"},
       "halal": {"status": "string", "summary": "string"},
       "alcohol": {"status": "string", "summary": "string"},
-      "recommendations": [
-        {"name": "Product Name", "asin": "B0XXXXXXXX"},
-        {"name": "Alternative 1", "asin": "B0XXXXXXXX"},
-        {"name": "Alternative 2", "asin": "B0XXXXXXXX"},
-        {"name": "Alternative 3", "asin": "B0XXXXXXXX"}
-      ]
+      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
     }
     `;
 
