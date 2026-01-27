@@ -51,9 +51,9 @@ export default async function handler(req: any, res: any) {
     3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
 
     4. RECOMMENDATIONS:
-      - First, provide the EXACT name of the product you identified in the image.
-      - Second, suggest THREE (4) highly-rated safe alternatives available on Amazon UK that are similar to this product but better for the user (e.g., if the scanned item is UNSAFE).
-
+      - Provide the EXACT name of the identified product you identified in the image.
+      - Suggest FOUR (4) highly-rated safe alternatives on Amazon UK.
+      - For EACH of the 5 items, provide the Amazon ASIN (10-character Product ID).
     Return ONLY a JSON object:
     {
       "identifiedProduct": "Exact Product Name",
@@ -63,7 +63,12 @@ export default async function handler(req: any, res: any) {
       "vegan": {"status": "string", "summary": "string"},
       "halal": {"status": "string", "summary": "string"},
       "alcohol": {"status": "string", "summary": "string"},
-      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 3"]
+      "recommendations": [
+        {"name": "Product Name", "asin": "B0XXXXXXXX"},
+        {"name": "Alternative 1", "asin": "B0XXXXXXXX"},
+        {"name": "Alternative 2", "asin": "B0XXXXXXXX"},
+        {"name": "Alternative 3", "asin": "B0XXXXXXXX"}
+      ]
     }
     `;
 
