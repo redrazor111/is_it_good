@@ -107,7 +107,7 @@ const StatusCard = ({ title, data, icon, isParentLoading }: StatusCardProps) => 
 };
 
 // --- CAMERA SCREEN COMPONENT ---
-function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) => void }) {
+function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCaptured: (base64: string) => void, onRecommendationsFound: (products: string[]) => void }) {
   const insets = useSafeAreaInsets();
   const initialState: AnalysisState = { text: "", status: "gray" };
   const lastImageRef = useRef<string | null>(null);
@@ -177,6 +177,9 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
     try {
       const rawResponse = await analyzeImageWithGemini(base64Data);
       const data = JSON.parse(rawResponse);
+      if (data.recommendations) {
+        onRecommendationsFound(data.recommendations);
+      }
 
       const updateState = (categoryData: any, setter: any) => {
         setter({
@@ -218,7 +221,7 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
       */}
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <Text style={styles.title}>Scan Image</Text>
-        <Text style={styles.subtitle}>Point at an ingredient label</Text>
+        <Text style={styles.subtitle}>Scan ingredient label</Text>
       </View>
 
       <View style={styles.cameraViewHalf}>
@@ -276,6 +279,7 @@ function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) =
 function AppContent() {
   const insets = useSafeAreaInsets();
   const [scannedImage, setScannedImage] = useState<string | null>(null);
+  const [recommendations, setRecommendations] = useState<string[]>([]);
 
   const iconMap: Record<string, IoniconsName> = {
     Camera: 'camera-outline',
@@ -311,12 +315,14 @@ function AppContent() {
         })}
       >
         <Tab.Screen name="Camera">
-          {() => <CameraScreen onImageCaptured={setScannedImage} />}
+          {() => <CameraScreen onImageCaptured={setScannedImage} onRecommendationsFound={setRecommendations}/>}
         </Tab.Screen>
         <Tab.Screen name="Ingredients">
           {() => <Ingredients imageUri={scannedImage} />}
         </Tab.Screen>
-        <Tab.Screen name="Shop" component={Shop} />
+        <Tab.Screen name="Shop">
+          {() => <Shop recommendedProducts={recommendations} />}
+        </Tab.Screen>
       </Tab.Navigator>
     </View>
   );
