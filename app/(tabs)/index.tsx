@@ -3,6 +3,7 @@ import React, { ComponentProps, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Easing,
   ScrollView,
   StatusBar,
@@ -17,15 +18,16 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Local Imports (Ensure these paths match your project structure)
+// Local Imports
 import Ingredients from '../../components/Ingredients';
 import Scanner from '../../components/Scanner';
 import Shop from '../../components/Shop';
 import { analyzeImageWithGemini } from '../../utils/geminiService';
 
 const Tab = createBottomTabNavigator();
+const { width } = Dimensions.get('window');
 
-// Types for Icons and State
+// --- TYPES ---
 type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -104,12 +106,9 @@ const StatusCard = ({ title, data, icon, isParentLoading }: StatusCardProps) => 
   );
 };
 
-interface CameraScreenProps {
-  onImageCaptured: (base64: string) => void;
-}
-
 // --- CAMERA SCREEN COMPONENT ---
-function CameraScreen({ onImageCaptured }: CameraScreenProps) {
+function CameraScreen({ onImageCaptured }: { onImageCaptured: (base64: string) => void }) {
+  const insets = useSafeAreaInsets();
   const initialState: AnalysisState = { text: "", status: "gray" };
   const lastImageRef = useRef<string | null>(null);
 
@@ -122,7 +121,6 @@ function CameraScreen({ onImageCaptured }: CameraScreenProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -171,56 +169,58 @@ function CameraScreen({ onImageCaptured }: CameraScreenProps) {
     return "#757575";
   };
 
-  type AnalysisCategory = "food" | "skin" | "veg" | "vegan" | "halal" | "alcohol";
-
   const handleScan = async (base64Data: string) => {
     setIsLoading(true);
     lastImageRef.current = base64Data;
     onImageCaptured(base64Data);
 
-    const runQuery = async (category: AnalysisCategory, setter: React.Dispatch<React.SetStateAction<AnalysisState>>) => {
-      try {
-        const res = await analyzeImageWithGemini(base64Data, category);
-        setter({ text: res, status: getStatusColor(res) });
-      } catch (e) {
-        setter({ text: "Request failed", status: "#757575" });
-      }
-    };
+    try {
+      const rawResponse = await analyzeImageWithGemini(base64Data);
+      const data = JSON.parse(rawResponse);
 
-    await Promise.allSettled([
-      runQuery('food', setFoodAnalysis),
-      runQuery('skin', setSkinAnalysis),
-      runQuery('veg', setVegAnalysis),
-      runQuery('vegan', setVeganAnalysis),
-      runQuery('halal', setHalalAnalysis),
-      runQuery('alcohol', setAlcoholFreeAnalysis)
-    ]);
+      const updateState = (categoryData: any, setter: any) => {
+        setter({
+          text: JSON.stringify(categoryData),
+          status: getStatusColor(JSON.stringify(categoryData))
+        });
+      };
 
-    setIsLoading(false);
+      updateState(data.food, setFoodAnalysis);
+      updateState(data.skin, setSkinAnalysis);
+      updateState(data.veg, setVegAnalysis);
+      updateState(data.vegan, setVeganAnalysis);
+      updateState(data.halal, setHalalAnalysis);
+      updateState(data.alcohol, setAlcoholFreeAnalysis);
+    } catch (e) {
+      console.error("Batch Analysis Failed", e);
+      const errorState = { text: "Analysis failed", status: "#757575" };
+      [setFoodAnalysis, setSkinAnalysis, setVegAnalysis, setVeganAnalysis, setHalalAnalysis, setAlcoholFreeAnalysis]
+        .forEach(setter => setter(errorState));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRerun = () => {
-    if (lastImageRef.current) {
-      // 1. Reset all card states to initialState immediately
-      setFoodAnalysis(initialState);
-      setSkinAnalysis(initialState);
-      setVegAnalysis(initialState);
-      setVeganAnalysis(initialState);
-      setHalalAnalysis(initialState);
-      setAlcoholFreeAnalysis(initialState);
-
-      // 2. Trigger the scan logic with the saved image
-      handleScan(lastImageRef.current);
-    }
+    if (lastImageRef.current) handleScan(lastImageRef.current);
   };
 
   const translateY = scanLineAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, 200],
+    outputRange: [0, 180],
   });
 
   return (
     <View style={styles.cameraTabContainer}>
+      {/* FIXED HEADER:
+          We apply insets.top to handle the notch,
+          AND paddingTop: 15 to match the Shop component's internal vertical padding.
+      */}
+      <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
+        <Text style={styles.title}>Scan Image</Text>
+        <Text style={styles.subtitle}>Point at an ingredient label</Text>
+      </View>
+
       <View style={styles.cameraViewHalf}>
         {hasPermission ? (
           <>
@@ -284,7 +284,7 @@ function AppContent() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff', paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <Tab.Navigator
         screenOptions={({ route }) => ({
@@ -298,7 +298,11 @@ function AppContent() {
             height: 65 + insets.bottom,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
             paddingTop: 10,
-            ...styles.shadow
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.05,
+            shadowRadius: 8,
+            elevation: 10,
           },
           tabBarIcon: ({ color, size }) => {
             const iconName = iconMap[route.name] || 'help-circle-outline';
@@ -326,6 +330,7 @@ export default function App() {
   );
 }
 
+// --- STYLES ---
 const styles = StyleSheet.create({
   shadow: {
     shadowColor: "#000",
@@ -334,13 +339,36 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  cameraTabContainer: { flex: 1, backgroundColor: '#FBFBFB' },
+  cameraTabContainer: {
+    flex: 1,
+    backgroundColor: '#FBFBFB'
+  },
+  // In your Main Component styles:
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    backgroundColor: '#fff',
+    zIndex: 10,        // Forces it above the camera
+    elevation: 10,     // Required for Android z-indexing
+    position: 'relative',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A1A1A',
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#757575',
+    marginTop: 4,
+  },
   cameraViewHalf: {
-    height: '42%',
+    height: '35%', // Slightly smaller to give header and results more breathing room
     backgroundColor: '#000',
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-    overflow: 'hidden'
+    overflow: 'hidden',
   },
   resultsHalf: { flex: 1, paddingHorizontal: 20 },
   headerRow: {
@@ -351,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   resultsHeader: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1A1A1A',
     letterSpacing: -0.5,

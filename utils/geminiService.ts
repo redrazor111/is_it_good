@@ -3,9 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const API_KEY = "AIzaSyCbd7emGCABna_-JRAnDBS9ZF31B3bAkG0";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-export const analyzeImageWithGemini = async (base64Data: string, type: 'food' | 'skin' | 'veg' | 'vegan' | 'halal' | 'alcohol') => {
+export const analyzeImageWithGemini = async (base64Data: string) => {
   try {
-    // Note: Use Gemini 3 Flash for speed and high context
     const model = genAI.getGenerativeModel({
       model: "gemini-3-flash-preview",
       // Force structured output to eliminate parsing errors
@@ -14,46 +13,44 @@ export const analyzeImageWithGemini = async (base64Data: string, type: 'food' | 
       }
     });
 
+    const base64Content = base64Data.includes(",")
+      ? base64Data.split(",")[1]
+      : base64Data;
+
     const imagePart = {
-      inlineData: { data: base64Data, mimeType: "image/jpeg" },
+      inlineData: { data: base64Content, mimeType: "image/jpeg" },
     };
 
-    // Use Structured Prompting with XML tags for better reasoning
-    let task = "Analyze the ingredients in the provided image for ${type.toUpperCase()} safety."
-    if (type.toUpperCase() === 'food') {
-      task = "Analyze the ingredients in the provided image to check it is safe to eat and drink."
-    } else if (type.toUpperCase() === 'skin') {
-      task = "Analyze the ingredients in the provided image to check it is safe to apply to skin."
-    } else if (type.toUpperCase() === 'veg') {
-      task = "Analyze the ingredients in the provided image to check it is Vegetarian."
-    } else if (type.toUpperCase() === 'vegan') {
-      task = "Analyze the ingredients in the provided image to check it is Vegan."
-    } else if (type.toUpperCase() === 'halal') {
-      task = "Analyze the ingredients in the provided image to check it is Halal."
-    } else if (type.toUpperCase() === 'alcohol') {
-      task = "Analyze the ingredients in the provided image to check it is Alcohol Free."
-    }
-
     const prompt = `
-      <task>
-        ${task}
-      </task>
-      <constraints>
-        1. Identify all legible ingredients.
-        2. Assign a safety status: "SAFE", "CAUTION", or "UNSAFE".
-        3. Provide a one-sentence summary explaining the rating.
-      </constraints>
-      <output_format>
-        Return ONLY a JSON object:
-        {"status": "SAFE" | "CAUTION" | "UNSAFE", "summary": "string"}
-      </output_format>
+      Analyze the ingredients in the provided image for the following categories:
+      1. General Food Safety, 2. Skin Safety, 3. Vegetarian, 4. Vegan, 5. Halal, 6. Alcohol-Free.
+
+      Identify all legible ingredients. For EACH category, assign a status: "SAFE", "CAUTION", or "UNSAFE" and a one-sentence summary.
+
+      Return ONLY a JSON object with this exact structure:
+      {
+        "food": {"status": "string", "summary": "string"},
+        "skin": {"status": "string", "summary": "string"},
+        "veg": {"status": "string", "summary": "string"},
+        "vegan": {"status": "string", "summary": "string"},
+        "halal": {"status": "string", "summary": "string"},
+        "alcohol": {"status": "string", "summary": "string"}
+      }
     `;
 
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
-    // Now you just JSON.parse(response.text()) in your App.tsx!
     return response.text();
   } catch (error: any) {
-    return JSON.stringify({ status: "UNSAFE", summary: `Error: ${error.message}` });
+    console.error("Gemini API Error:", error);
+    // Return a structured error so your JSON.parse doesn't crash the app
+    return JSON.stringify({
+      food: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      skin: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      veg: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      vegan: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      halal: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      alcohol: { status: "UNSAFE", summary: `Error: ${error.message}` },
+    });
   }
 };

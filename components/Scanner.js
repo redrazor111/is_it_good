@@ -43,36 +43,38 @@ export default function Scanner({ onScan, disabled }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  camera: { flex: 1 },
+  container: {
+    height: '100%', // Match parent exactly
+    width: '100%',
+    backgroundColor: '#000',
+    overflow: 'hidden',
+  },
+  camera: {
+    height: '100%',
+    width: '100%',
+  },
   overlay: {
     flex: 1,
-    justifyContent: 'flex-end', // Keeps content at the bottom
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    // CHANGED: Reduced from 20 to 10 to move it closer to the tabs
-    marginBottom: 10,
+    marginBottom: 15, // Adjusted for better button clearance
   },
   outerRing: {
-    width: 75, // Slightly smaller to fit better in the lower area
-    height: 75,
-    borderRadius: 37.5,
-    borderWidth: 4,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
     borderColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.2)', // Slight tint to make the white ring pop
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   captureBtn: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   enabledBtn: {
     backgroundColor: 'white',
