@@ -1,0 +1,62 @@
+// api/analyze.ts
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+export const config = {
+  maxDuration: 30, // Gemini can take a few seconds
+};
+
+export default async function handler(req: any, res: any) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // 1. Pull the key from Vercel's environment variables
+  const API_KEY = process.env.GEMINI_API_KEY;
+
+  if (!API_KEY) {
+    return res.status(500).json({ error: "Server configuration missing API Key" });
+  }
+
+  const genAI = new GoogleGenerativeAI(API_KEY);
+
+  try {
+    const { base64Data } = req.body; // App sends the image here
+
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash", // Using the stable flash model
+      generationConfig: { responseMimeType: "application/json" },
+    });
+
+    const base64Content = base64Data.includes(",")
+      ? base64Data.split(",")[1]
+      : base64Data;
+
+    const imagePart = {
+      inlineData: { data: base64Content, mimeType: "image/jpeg" },
+    };
+
+    const prompt = `
+      Analyze the ingredients in the provided image for:
+      1. General Food Safety, 2. Skin Safety, 3. Vegetarian, 4. Vegan, 5. Halal, 6. Alcohol-Free.
+      Return ONLY a JSON object:
+      {
+        "food": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
+        "skin": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
+        "veg": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
+        "vegan": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
+        "halal": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
+        "alcohol": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"}
+      }
+    `;
+
+    const result = await model.generateContent([prompt, imagePart]);
+    const response = await result.response;
+
+    // Return the JSON directly to your app
+    return res.status(200).json(JSON.parse(response.text()));
+
+  } catch (error: any) {
+    console.error("Vercel Backend Error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+}
