@@ -51,7 +51,7 @@ export default async function handler(req: any, res: any) {
     3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
     4. RECOMMENDATIONS:
       - First, provide the EXACT name of the product you identified in the image.
-      - Second, suggest FOUR (4) highly-rated alternatives available on Amazon UK that are similar to this product.
+      - Second, suggest NINE (9) highly-rated alternatives available on Amazon UK that are similar to this product.
 
     Return ONLY a JSON object:
     {
@@ -62,7 +62,7 @@ export default async function handler(req: any, res: any) {
       "vegan": {"status": "string", "summary": "string"},
       "halal": {"status": "string", "summary": "string"},
       "alcohol": {"status": "string", "summary": "string"},
-      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4"]
+      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4", , "Alternative 5", "Alternative 6", "Alternative 7", "Alternative 8", "Alternative 9"]
     }
     `;
 
