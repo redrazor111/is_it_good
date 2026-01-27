@@ -53,7 +53,7 @@ export default async function handler(req: any, res: any) {
     4. RECOMMENDATIONS:
       - Provide the EXACT name of the identified product you identified in the image.
       - Suggest FOUR (4) highly-rated safe alternatives on Amazon UK.
-      - For EACH of the 5 items, provide the Amazon ASIN (10-character Product ID).
+      - For EACH of the 5 items, provide the valid Amazon ASIN.
     Return ONLY a JSON object:
     {
       "identifiedProduct": "Exact Product Name",
