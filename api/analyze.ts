@@ -46,22 +46,25 @@ export default async function handler(req: any, res: any) {
     };
 
     const prompt = `
-      Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
-      Assign status (SAFE, CAUTION, UNSAFE) and a summary for each.
+    1. Identify the specific product name from the image.
+    2. Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
+    3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
 
-      ALSO: If any category is UNSAFE or CAUTION, suggest 3 specific, popular,
-      and highly-rated product names as safe alternatives available on Amazon UK.
+    4. RECOMMENDATIONS:
+      - First, provide the EXACT name of the product you identified in the image.
+      - Second, suggest THREE (4) highly-rated safe alternatives available on Amazon UK that are similar to this product but better for the user (e.g., if the scanned item is UNSAFE).
 
-      Return ONLY a JSON object:
-      {
-        "food": {"status": "string", "summary": "string"},
-        "skin": {"status": "string", "summary": "string"},
-        "veg": {"status": "string", "summary": "string"},
-        "vegan": {"status": "string", "summary": "string"},
-        "halal": {"status": "string", "summary": "string"},
-        "alcohol": {"status": "string", "summary": "string"},
-        "recommendations": ["Product Name 1", "Product Name 2", "Product Name 3"]
-      }
+    Return ONLY a JSON object:
+    {
+      "identifiedProduct": "Exact Product Name",
+      "food": {"status": "string", "summary": "string"},
+      "skin": {"status": "string", "summary": "string"},
+      "veg": {"status": "string", "summary": "string"},
+      "vegan": {"status": "string", "summary": "string"},
+      "halal": {"status": "string", "summary": "string"},
+      "alcohol": {"status": "string", "summary": "string"},
+      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 3"]
+    }
     `;
 
     const result = await model.generateContent([prompt, imagePart]);
