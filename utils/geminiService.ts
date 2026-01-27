@@ -1,56 +1,34 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const API_KEY = "AIzaSyCbd7emGCABna_-JRAnDBS9ZF31B3bAkG0";
-const genAI = new GoogleGenerativeAI(API_KEY);
+const VERCEL_API_URL = "https://is-it-good-pearl.vercel.app/api/analyze";
 
 export const analyzeImageWithGemini = async (base64Data: string) => {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
-      // Force structured output to eliminate parsing errors
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
+    const response = await fetch(VERCEL_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ base64Data }),
     });
 
-    const base64Content = base64Data.includes(",")
-      ? base64Data.split(",")[1]
-      : base64Data;
+    if (!response.ok) {
+      throw new Error(`Server responded with ${response.status}`);
+    }
 
-    const imagePart = {
-      inlineData: { data: base64Content, mimeType: "image/jpeg" },
-    };
+    const data = await response.json();
+    // We return a string to match your existing app logic that uses JSON.parse()
+    return JSON.stringify(data);
 
-    const prompt = `
-      Analyze the ingredients in the provided image for the following categories:
-      1. General Food Safety, 2. Skin Safety, 3. Vegetarian, 4. Vegan, 5. Halal, 6. Alcohol-Free.
-
-      Identify all legible ingredients. For EACH category, assign a status: "SAFE", "CAUTION", or "UNSAFE" and a one-sentence summary.
-
-      Return ONLY a JSON object with this exact structure:
-      {
-        "food": {"status": "string", "summary": "string"},
-        "skin": {"status": "string", "summary": "string"},
-        "veg": {"status": "string", "summary": "string"},
-        "vegan": {"status": "string", "summary": "string"},
-        "halal": {"status": "string", "summary": "string"},
-        "alcohol": {"status": "string", "summary": "string"}
-      }
-    `;
-
-    const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    return response.text();
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    // Return a structured error so your JSON.parse doesn't crash the app
+    console.error("Frontend Service Error:", error);
+
+    // Return a fallback object so the app doesn't crash
     return JSON.stringify({
-      food: { status: "UNSAFE", summary: `Error: ${error.message}` },
-      skin: { status: "UNSAFE", summary: `Error: ${error.message}` },
-      veg: { status: "UNSAFE", summary: `Error: ${error.message}` },
-      vegan: { status: "UNSAFE", summary: `Error: ${error.message}` },
-      halal: { status: "UNSAFE", summary: `Error: ${error.message}` },
-      alcohol: { status: "UNSAFE", summary: `Error: ${error.message}` },
+      food: { status: "UNSAFE", summary: "Connection to security server failed." },
+      skin: { status: "UNSAFE", summary: "Ensure your Vercel URL is correct." },
+      veg: { status: "UNSAFE", summary: "Check internet connection." },
+      vegan: { status: "UNSAFE", summary: "Check internet connection." },
+      halal: { status: "UNSAFE", summary: "Check internet connection." },
+      alcohol: { status: "UNSAFE", summary: "Check internet connection." },
     });
   }
 };
