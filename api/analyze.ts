@@ -46,16 +46,21 @@ export default async function handler(req: any, res: any) {
     };
 
     const prompt = `
-      Analyze the ingredients in the provided image for:
-      1. General Food Safety, 2. Skin Safety, 3. Vegetarian, 4. Vegan, 5. Halal, 6. Alcohol-Free.
+      Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
+      Assign status (SAFE, CAUTION, UNSAFE) and a summary for each.
+
+      ALSO: If any category is UNSAFE or CAUTION, suggest 3 specific, popular,
+      and highly-rated product names as safe alternatives available on Amazon UK.
+
       Return ONLY a JSON object:
       {
-        "food": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
-        "skin": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
-        "veg": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
-        "vegan": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
-        "halal": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"},
-        "alcohol": {"status": "SAFE|CAUTION|UNSAFE", "summary": "string"}
+        "food": {"status": "string", "summary": "string"},
+        "skin": {"status": "string", "summary": "string"},
+        "veg": {"status": "string", "summary": "string"},
+        "vegan": {"status": "string", "summary": "string"},
+        "halal": {"status": "string", "summary": "string"},
+        "alcohol": {"status": "string", "summary": "string"},
+        "recommendations": ["Product Name 1", "Product Name 2", "Product Name 3"]
       }
     `;
 
