@@ -19,7 +19,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Local Imports
+import { checkQuota, incrementQuota } from '@/utils/quotaService';
 import Ingredients from '../../components/Ingredients';
+import PremiumModal from '../../components/PremiumModal';
 import Scanner from '../../components/Scanner';
 import Shop from '../../components/Shop';
 import { analyzeImageWithGemini } from '../../utils/geminiService';
@@ -121,6 +123,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
 
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [showPremium, setShowPremium] = useState(false);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -170,12 +173,19 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
   };
 
   const handleScan = async (base64Data: string) => {
+    const status = await checkQuota();
+    if (status === 'LIMIT_REACHED') {
+      setShowPremium(true);
+      return;
+    }
+
     setIsLoading(true);
     lastImageRef.current = base64Data;
     onImageCaptured(base64Data);
 
     try {
       const rawResponse = await analyzeImageWithGemini(base64Data);
+      await incrementQuota();
       const data = JSON.parse(rawResponse);
       if (data.recommendations) {
         onRecommendationsFound(data.recommendations);
@@ -215,10 +225,6 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
 
   return (
     <View style={styles.cameraTabContainer}>
-      {/* FIXED HEADER:
-          We apply insets.top to handle the notch,
-          AND paddingTop: 15 to match the Shop component's internal vertical padding.
-      */}
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
         <Text style={styles.title}>Scan Image</Text>
         <Text style={styles.subtitle}>Scan ingredient label</Text>
@@ -271,6 +277,11 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
           <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} />
         </ScrollView>
       </View>
+
+      <PremiumModal
+          visible={showPremium}
+          onClose={() => setShowPremium(false)}
+        />
     </View>
   );
 }
@@ -315,7 +326,7 @@ function AppContent() {
         })}
       >
         <Tab.Screen name="Camera">
-          {() => <CameraScreen onImageCaptured={setScannedImage} onRecommendationsFound={setRecommendations}/>}
+          {() => <CameraScreen onImageCaptured={setScannedImage} onRecommendationsFound={setRecommendations} />}
         </Tab.Screen>
         <Tab.Screen name="Ingredients">
           {() => <Ingredients imageUri={scannedImage} />}
