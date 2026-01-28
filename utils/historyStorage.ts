@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
 import { Alert } from 'react-native';
 
-const MAX_HISTORY = 10;
+export const MAX_HISTORY = 10;
 
 export const saveToHistory = async (base64Data: string, analysisData: any) => {
   try {

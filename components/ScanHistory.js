@@ -4,6 +4,7 @@ import { useIsFocused, useNavigation } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MAX_HISTORY } from '../utils/historyStorage';
 import StatusCard from './StatusCard';
 
 export default function ScanHistory({ onTriggerRerun }) {
@@ -77,7 +78,7 @@ export default function ScanHistory({ onTriggerRerun }) {
     <View style={[styles.fullScreen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>History</Text>
-        <Text style={styles.subtitle}>Previous 5 scanned products</Text>
+        <Text style={styles.subtitle}>Previous scanned products, up to {MAX_HISTORY} products.</Text>
       </View>
       <ScrollView contentContainerStyle={styles.scrollContentList}>
         {history.length === 0 && (
