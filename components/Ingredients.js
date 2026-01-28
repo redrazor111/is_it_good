@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   placeholderContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40, // Keeps the empty message at the top area
+    paddingVertical: 60,
   },
   placeholderText: {
     textAlign: 'center',
@@ -111,7 +111,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F0F0F0',
-    // Consistent Shadow
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -120,7 +119,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    height: 300,
+    height: 350, // Slightly taller for better label legibility
     backgroundColor: '#f0f0f0',
   },
   image: {
