@@ -1,43 +1,53 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const { width } = Dimensions.get('window');
 
 export default function Ingredients({ imageUri }) {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.fullScreen, { paddingTop: insets.top }]}>
-      {/* Matching Header Style */}
+      {/* Consistent Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Scanned Product</Text>
-        <Text style={styles.subtitle}>Image preview of your last scan</Text>
+        <Text style={styles.subtitle}>Image preview of your current product scan</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {imageUri ? (
-          <View style={styles.card}>
-            <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: `data:image/jpeg;base64,${imageUri}` }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            </View>
-            <View style={styles.cardBody}>
-              <MaterialCommunityIcons name="nutrition" size={20} color="#2E7D32" />
-              <Text style={styles.cardText}>Captured Ingredient Label</Text>
-            </View>
-          </View>
-        ) : (
-          /* Matching the Shop placeholder style */
+      <ScrollView
+        contentContainerStyle={styles.scrollContentList}
+        showsVerticalScrollIndicator={false}
+      >
+        {!imageUri ? (
+          /* Placeholder at the top when empty */
           <View style={styles.placeholderContainer}>
             <MaterialCommunityIcons name="image-off-outline" size={60} color="#E0E0E0" />
             <Text style={styles.placeholderText}>
               No image scanned yet. Go to the Camera tab to analyze a product.
             </Text>
+          </View>
+        ) : (
+          /* Active Card View */
+          <View style={styles.listContainer}>
+            <Text style={styles.sectionLabel}>CURRENT SCAN</Text>
+            <View style={styles.card}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${imageUri}` }}
+                  style={styles.image}
+                  resizeMode="cover"
+                />
+              </View>
+              <View style={styles.cardBody}>
+                <View style={styles.productIconBg}>
+                  <MaterialCommunityIcons name="nutrition" size={20} color="#2E7D32" />
+                </View>
+                <View style={styles.productDetails}>
+                   <Text style={styles.productName}>Captured Ingredient Label</Text>
+                   <Text style={styles.viewOnAmazon}>High Resolution Analysis</Text>
+                </View>
+              </View>
+            </View>
           </View>
         )}
       </ScrollView>
@@ -48,14 +58,14 @@ export default function Ingredients({ imageUri }) {
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
-    backgroundColor: '#FBFBFB', // Same off-white background
+    backgroundColor: '#FBFBFB',
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: '#F0F0F0',
   },
   title: {
     fontSize: 24,
@@ -68,24 +78,49 @@ const styles = StyleSheet.create({
     color: '#757575',
     marginTop: 4,
   },
-  scrollContent: {
-    flexGrow: 1,
+  scrollContentList: {
     padding: 20,
+    paddingBottom: 40,
+  },
+  placeholderContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40, // Keeps the empty message at the top area
+  },
+  placeholderText: {
+    textAlign: 'center',
+    color: '#9E9E9E',
+    marginTop: 15,
+    fontSize: 16,
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  listContainer: {
+    width: '100%',
+  },
+  sectionLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#9E9E9E',
+    letterSpacing: 1,
+    marginBottom: 15,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 18,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    // Consistent Shadow
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
-    marginBottom: 20,
   },
   imageContainer: {
     width: '100%',
-    height: 250,
+    height: 300,
     backgroundColor: '#f0f0f0',
   },
   image: {
@@ -98,24 +133,27 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#fff',
   },
-  cardText: {
-    marginLeft: 10,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
-  },
-  placeholderContainer: {
-    flex: 1,
-    alignItems: 'center',
+  productIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
-    marginTop: 60,
+    alignItems: 'center',
+    marginRight: 15,
   },
-  placeholderText: {
-    textAlign: 'center',
-    color: '#9E9E9E',
-    marginTop: 15,
-    fontSize: 16,
-    lineHeight: 22,
-    paddingHorizontal: 40,
+  productDetails: {
+    flex: 1,
+  },
+  productName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#333',
+  },
+  viewOnAmazon: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '600',
+    marginTop: 2,
   },
 });

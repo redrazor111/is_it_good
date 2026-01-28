@@ -3,7 +3,6 @@ import React, { ComponentProps, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   Easing,
   ScrollView,
   StatusBar,
@@ -14,99 +13,29 @@ import {
 } from 'react-native';
 
 // Navigation & Safe Area Imports
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Local Imports
+import { saveToHistory } from '@/utils/historyStorage';
 import { checkQuota, incrementQuota } from '@/utils/quotaService';
 import Ingredients from '../../components/Ingredients';
 import PremiumModal from '../../components/PremiumModal';
+import ScanHistory from '../../components/ScanHistory';
 import Scanner from '../../components/Scanner';
 import Shop from '../../components/Shop';
+import StatusCard from '../../components/StatusCard';
 import { analyzeImageWithGemini } from '../../utils/geminiService';
 
 const Tab = createBottomTabNavigator();
-const { width } = Dimensions.get('window');
 
-// --- TYPES ---
-type MaterialIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
 interface AnalysisState {
   text: string;
   status: string;
 }
-
-interface StatusCardProps {
-  title: string;
-  data: AnalysisState;
-  icon: MaterialIconName;
-  isParentLoading: boolean;
-}
-
-// --- STATUS CARD SUB-COMPONENT ---
-const StatusCard = ({ title, data, icon, isParentLoading }: StatusCardProps) => {
-  const [showSummary, setShowSummary] = useState(false);
-  const hasData = !!data.text;
-  const isPending = isParentLoading && !hasData;
-
-  useEffect(() => {
-    if (!hasData) setShowSummary(false);
-  }, [hasData]);
-
-  const getSummaryText = (jsonString: string) => {
-    try {
-      if (!jsonString) return "";
-      const parsed = JSON.parse(jsonString);
-      return parsed.summary || jsonString;
-    } catch { return jsonString; }
-  };
-
-  const getStatusText = (jsonString: string) => {
-    if (isPending) return "Analyzing...";
-    try {
-      if (!jsonString) return "Waiting...";
-      const parsed = JSON.parse(jsonString);
-      return parsed.status || "Pending";
-    } catch { return "Pending"; }
-  };
-
-  return (
-    <TouchableOpacity
-      activeOpacity={hasData ? 0.7 : 1}
-      onPress={() => hasData && setShowSummary(!showSummary)}
-      style={[styles.card, styles.shadow]}
-    >
-      <View style={styles.cardHeader}>
-        <View style={styles.iconCircle}>
-          <MaterialCommunityIcons name={icon} size={22} color="#4CAF50" />
-        </View>
-        <View style={styles.titleColumn}>
-          <Text style={styles.cardLabel}>{title}</Text>
-          <View style={[styles.statusPill, { backgroundColor: isPending ? '#F5F5F5' : data.status + '15' }]}>
-            {isPending ? (
-              <ActivityIndicator size="small" color="#4CAF50" style={{ marginRight: 6, transform: [{ scale: 0.7 }] }} />
-            ) : (
-              <View style={[styles.dot, { backgroundColor: data.status || '#757575' }]} />
-            )}
-            <Text style={[styles.statusValue, { color: isPending ? '#9E9E9E' : (data.status || '#757575') }]}>
-              {getStatusText(data.text)}
-            </Text>
-          </View>
-        </View>
-        {hasData && (
-          <Ionicons name={showSummary ? "chevron-up" : "chevron-down"} size={20} color="#CCC" />
-        )}
-      </View>
-      {showSummary && (
-        <View style={styles.summaryContainer}>
-          <Text style={styles.analysisText}>{getSummaryText(data.text)}</Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
-};
 
 // --- CAMERA SCREEN COMPONENT ---
 function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCaptured: (base64: string) => void, onRecommendationsFound: (products: string[]) => void }) {
@@ -179,14 +108,21 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
       return;
     }
 
+    setFoodAnalysis(initialState);
+    setSkinAnalysis(initialState);
+    setVegAnalysis(initialState);
+    setVeganAnalysis(initialState);
+    setHalalAnalysis(initialState);
+    setAlcoholFreeAnalysis(initialState);
+
     setIsLoading(true);
     lastImageRef.current = base64Data;
     onImageCaptured(base64Data);
 
     try {
       const rawResponse = await analyzeImageWithGemini(base64Data);
-      await incrementQuota();
       const data = JSON.parse(rawResponse);
+      await incrementQuota();
       if (data.recommendations) {
         onRecommendationsFound(data.recommendations);
       }
@@ -204,6 +140,8 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
       updateState(data.vegan, setVeganAnalysis);
       updateState(data.halal, setHalalAnalysis);
       updateState(data.alcohol, setAlcoholFreeAnalysis);
+
+      await saveToHistory(base64Data, data);
     } catch (e) {
       console.error("Batch Analysis Failed", e);
       const errorState = { text: "Analysis failed", status: "#757575" };
@@ -214,8 +152,23 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound }: { onImageCapt
     }
   };
 
-  const handleRerun = () => {
-    if (lastImageRef.current) handleScan(lastImageRef.current);
+  const handleRerun = async () => {
+    const status = await checkQuota();
+    if (status === 'LIMIT_REACHED') {
+      setShowPremium(true);
+      return;
+    }
+
+    if (lastImageRef.current) {
+      setFoodAnalysis(initialState);
+      setSkinAnalysis(initialState);
+      setVegAnalysis(initialState);
+      setVeganAnalysis(initialState);
+      setHalalAnalysis(initialState);
+      setAlcoholFreeAnalysis(initialState);
+
+      handleScan(lastImageRef.current);
+    }
   };
 
   const translateY = scanLineAnim.interpolate({
@@ -294,7 +247,8 @@ function AppContent() {
 
   const iconMap: Record<string, IoniconsName> = {
     Camera: 'camera-outline',
-    Ingredients: 'nutrition-outline',
+    Product: 'nutrition-outline',
+    History: 'time-outline',
     Shop: 'cart-outline',
   };
 
@@ -328,8 +282,11 @@ function AppContent() {
         <Tab.Screen name="Camera">
           {() => <CameraScreen onImageCaptured={setScannedImage} onRecommendationsFound={setRecommendations} />}
         </Tab.Screen>
-        <Tab.Screen name="Ingredients">
+        <Tab.Screen name="Product">
           {() => <Ingredients imageUri={scannedImage} />}
+        </Tab.Screen>
+        <Tab.Screen name="History">
+          {() => <ScanHistory/>}
         </Tab.Screen>
         <Tab.Screen name="Shop">
           {() => <Shop recommendedProducts={recommendations} />}
