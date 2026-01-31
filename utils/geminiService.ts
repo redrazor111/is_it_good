@@ -26,6 +26,7 @@ export const analyzeImageWithGemini = async (base64Data: string) => {
     return JSON.stringify({
       food: { status: "UNSAFE", summary: errorHasOccurred },
       skin: { status: "UNSAFE", summary: errorHasOccurred },
+      makeup: { status: "UNSAFE", summary: errorHasOccurred },
       veg: { status: "UNSAFE", summary: errorHasOccurred },
       vegan: { status: "UNSAFE", summary: errorHasOccurred },
       halal: { status: "UNSAFE", summary: errorHasOccurred },

@@ -152,10 +152,15 @@ export default function ScanHistory({ onTriggerRerun }) {
                 <StatusCard title="Skin Safety" data={formatData(selectedItem.analysis.skin)} icon="face-man-shimmer" />
                 {isPro && (
                   <>
-                  <StatusCard title="Vegetarian" data={formatData(selectedItem.analysis.veg || selectedItem.analysis.vegetarian)} icon="leaf" />
-                  <StatusCard title="Vegan" data={formatData(selectedItem.analysis.vegan)} icon="sprout" />
-                  <StatusCard title="Halal" data={formatData(selectedItem.analysis.halal)} icon="star-crescent" />
-                  <StatusCard title="Alcohol Free" data={formatData(selectedItem.analysis.alcohol)} icon="glass-cocktail-off" /></>
+                    <StatusCard
+                      title="Makeup Safety"
+                      data={formatData(selectedItem.analysis.makeup)}
+                      icon="lipstick"
+                    />
+                    <StatusCard title="Vegetarian" data={formatData(selectedItem.analysis.veg || selectedItem.analysis.vegetarian)} icon="leaf" />
+                    <StatusCard title="Vegan" data={formatData(selectedItem.analysis.vegan)} icon="sprout" />
+                    <StatusCard title="Halal" data={formatData(selectedItem.analysis.halal)} icon="star-crescent" />
+                    <StatusCard title="Alcohol Free" data={formatData(selectedItem.analysis.alcohol)} icon="glass-cocktail-off" /></>
                 )}
               </>
             )}

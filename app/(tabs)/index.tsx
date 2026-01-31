@@ -53,6 +53,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
   const [foodAnalysis, setFoodAnalysis] = useState<AnalysisState>(initialState);
   const [skinAnalysis, setSkinAnalysis] = useState<AnalysisState>(initialState);
+  const [makeupAnalysis, setMakeupAnalysis] = useState<AnalysisState>(initialState);
   const [vegAnalysis, setVegAnalysis] = useState<AnalysisState>(initialState);
   const [veganAnalysis, setVeganAnalysis] = useState<AnalysisState>(initialState);
   const [halalAnalysis, setHalalAnalysis] = useState<AnalysisState>(initialState);
@@ -95,6 +96,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     lastImageRef.current = null;
     setFoodAnalysis(initialState);
     setSkinAnalysis(initialState);
+    setMakeupAnalysis(initialState);
     setVegAnalysis(initialState);
     setVeganAnalysis(initialState);
     setHalalAnalysis(initialState);
@@ -126,6 +128,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
     setFoodAnalysis(initialState);
     setSkinAnalysis(initialState);
+    setMakeupAnalysis(initialState);
     setVegAnalysis(initialState);
     setVeganAnalysis(initialState);
     setHalalAnalysis(initialState);
@@ -152,6 +155,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
       updateState(data.food, setFoodAnalysis);
       updateState(data.skin, setSkinAnalysis);
+      updateState(data.makeup, setMakeupAnalysis);
       updateState(data.veg, setVegAnalysis);
       updateState(data.vegan, setVeganAnalysis);
       updateState(data.halal, setHalalAnalysis);
@@ -161,7 +165,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     } catch (e) {
       console.error("Batch Analysis Failed", e);
       const errorState = { text: "Analysis failed", status: "#757575" };
-      [setFoodAnalysis, setSkinAnalysis, setVegAnalysis, setVeganAnalysis, setHalalAnalysis, setAlcoholFreeAnalysis]
+      [setFoodAnalysis, setSkinAnalysis, setMakeupAnalysis, setVegAnalysis, setVeganAnalysis, setHalalAnalysis, setAlcoholFreeAnalysis]
         .forEach(setter => setter(errorState));
     } finally {
       setIsLoading(false);
@@ -178,6 +182,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     if (lastImageRef.current) {
       setFoodAnalysis(initialState);
       setSkinAnalysis(initialState);
+      setMakeupAnalysis(initialState);
       setVegAnalysis(initialState);
       setVeganAnalysis(initialState);
       setHalalAnalysis(initialState);
@@ -243,7 +248,13 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
           {isPro ? (
             <>
               <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
-              <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+              <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+              <StatusCard
+                title="Makeup Safety"
+                data={makeupAnalysis}
+                icon="lipstick"
+                isParentLoading={isLoading}
+              />
               <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} />
               <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} />
               <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} />
@@ -252,7 +263,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
           ) : (
             <>
               <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
-              <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+              <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
             </>
           )}
         </ScrollView>
