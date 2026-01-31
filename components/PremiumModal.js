@@ -17,7 +17,7 @@ export default function PremiumModal({ visible, onClose }) {
           </Text>
 
           <TouchableOpacity style={styles.upgradeBtn} onPress={() => {/* Logic for payment */}}>
-            <Text style={styles.upgradeText}>Go Premium for only - $0.49/month</Text>
+            <Text style={styles.upgradeText}>Go Premium for only - $0.99/month</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>

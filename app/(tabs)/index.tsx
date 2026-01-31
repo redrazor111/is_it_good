@@ -27,6 +27,7 @@ import Scanner from '../../components/Scanner';
 import Shop from '../../components/Shop';
 import StatusCard from '../../components/StatusCard';
 import { analyzeImageWithGemini } from '../../utils/geminiService';
+import { useSubscriptionStatus } from '../../utils/subscription';
 
 const Tab = createBottomTabNavigator();
 
@@ -60,6 +61,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
   const [isLoading, setIsLoading] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [showPremium, setShowPremium] = useState(false);
+  const { isPro, loading } = useSubscriptionStatus();
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -190,6 +192,8 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     outputRange: [0, 180],
   });
 
+  if (loading) return <ActivityIndicator />;
+
   return (
     <View style={styles.cameraTabContainer}>
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
@@ -236,12 +240,21 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollPadding} showsVerticalScrollIndicator={false}>
-          <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
-          <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
-          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} />
-          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} />
-          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} />
-          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} />
+          {isPro ? (
+            <>
+              <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
+              <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+              <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} />
+              <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} />
+              <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} />
+              <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} />
+            </>
+          ) : (
+            <>
+              <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
+              <StatusCard title="Safe for Skin" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
+            </>
+          )}
         </ScrollView>
       </View>
 
@@ -259,6 +272,7 @@ function AppContent() {
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [pendingRerunUri, setPendingRerunUri] = useState<string | null>(null);
+  const { isPro } = useSubscriptionStatus();
 
   const iconMap: Record<string, IoniconsName> = {
     Camera: 'camera-outline',
@@ -301,9 +315,11 @@ function AppContent() {
         <Tab.Screen name="Product">
           {() => <Ingredients imageUri={scannedImage} />}
         </Tab.Screen>
-        <Tab.Screen name="History">
-          {() => <ScanHistory onTriggerRerun={(uri: string) => setPendingRerunUri(uri)} />}
-        </Tab.Screen>
+        {isPro && (
+          <Tab.Screen name="History">
+            {() => <ScanHistory onTriggerRerun={(uri: string) => setPendingRerunUri(uri)} />}
+          </Tab.Screen>
+        )}
         <Tab.Screen name="Shop">
           {() => <Shop recommendedProducts={recommendations} />}
         </Tab.Screen>

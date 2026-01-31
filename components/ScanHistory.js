@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MAX_HISTORY } from '../utils/historyStorage';
+import { useSubscriptionStatus } from '../utils/subscription';
 import StatusCard from './StatusCard';
 
 export default function ScanHistory({ onTriggerRerun }) {
@@ -13,6 +14,7 @@ export default function ScanHistory({ onTriggerRerun }) {
   const navigation = useNavigation();
   const [history, setHistory] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
+  const { isPro } = useSubscriptionStatus();
 
   useEffect(() => {
     const load = async () => {
@@ -148,10 +150,13 @@ export default function ScanHistory({ onTriggerRerun }) {
 
                 <StatusCard title="Food Safety" data={formatData(selectedItem.analysis.food)} icon="food-apple" />
                 <StatusCard title="Skin Safety" data={formatData(selectedItem.analysis.skin)} icon="face-man-shimmer" />
-                <StatusCard title="Vegetarian" data={formatData(selectedItem.analysis.veg || selectedItem.analysis.vegetarian)} icon="leaf" />
-                <StatusCard title="Vegan" data={formatData(selectedItem.analysis.vegan)} icon="sprout" />
-                <StatusCard title="Halal" data={formatData(selectedItem.analysis.halal)} icon="star-crescent" />
-                <StatusCard title="Alcohol Free" data={formatData(selectedItem.analysis.alcohol)} icon="glass-cocktail-off" />
+                {isPro && (
+                  <>
+                  <StatusCard title="Vegetarian" data={formatData(selectedItem.analysis.veg || selectedItem.analysis.vegetarian)} icon="leaf" />
+                  <StatusCard title="Vegan" data={formatData(selectedItem.analysis.vegan)} icon="sprout" />
+                  <StatusCard title="Halal" data={formatData(selectedItem.analysis.halal)} icon="star-crescent" />
+                  <StatusCard title="Alcohol Free" data={formatData(selectedItem.analysis.alcohol)} icon="glass-cocktail-off" /></>
+                )}
               </>
             )}
           </ScrollView>

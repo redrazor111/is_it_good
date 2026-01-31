@@ -1,7 +1,6 @@
 // utils/quotaService.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const MAX_SEARCHES = 2;
+import { MAX_SEARCHES } from './constants';
 
 export const checkQuota = async () => {
   const today = new Date().toISOString().split('T')[0];

@@ -21,14 +21,15 @@ export const analyzeImageWithGemini = async (base64Data: string) => {
   } catch (error: any) {
     console.error("Frontend Service Error:", error);
 
+    const errorHasOccurred = "An Error has occurred."
     // Return a fallback object so the app doesn't crash
     return JSON.stringify({
-      food: { status: "UNSAFE", summary: "Connection to security server failed." },
-      skin: { status: "UNSAFE", summary: "Ensure your Vercel URL is correct." },
-      veg: { status: "UNSAFE", summary: "Check internet connection." },
-      vegan: { status: "UNSAFE", summary: "Check internet connection." },
-      halal: { status: "UNSAFE", summary: "Check internet connection." },
-      alcohol: { status: "UNSAFE", summary: "Check internet connection." },
+      food: { status: "UNSAFE", summary: errorHasOccurred },
+      skin: { status: "UNSAFE", summary: errorHasOccurred },
+      veg: { status: "UNSAFE", summary: errorHasOccurred },
+      vegan: { status: "UNSAFE", summary: errorHasOccurred },
+      halal: { status: "UNSAFE", summary: errorHasOccurred },
+      alcohol: { status: "UNSAFE", summary: errorHasOccurred },
     });
   }
 };
