@@ -30,16 +30,22 @@ export default async function handler(req: any, res: any) {
   const genAI = new GoogleGenerativeAI(API_KEY);
 
   try {
-    const { ingredientText } = req.body; // App sends the image here
+    const { base64Data } = req.body; // App sends the image here
 
     const model = genAI.getGenerativeModel({
       model: "gemini-3-flash-preview",
       generationConfig: { responseMimeType: "application/json" },
     });
 
-    const prompt = `
-    The following text was extracted from an ingredient label via OCR: "${ingredientText}"
+    const base64Content = base64Data.includes(",")
+      ? base64Data.split(",")[1]
+      : base64Data;
 
+    const imagePart = {
+      inlineData: { data: base64Content, mimeType: "image/jpeg" },
+    };
+
+    const prompt = `
     1. Identify the specific product name from the image.
     2. Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
     3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
@@ -60,7 +66,7 @@ export default async function handler(req: any, res: any) {
     }
     `;
 
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
 
     // Return the JSON directly to your app
