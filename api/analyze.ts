@@ -46,23 +46,25 @@ export default async function handler(req: any, res: any) {
     };
 
     const prompt = `
-    1. Identify the specific product name from the image.
-    2. Analyze ingredients for: Food Safety, Skin, Veg, Vegan, Halal, Alcohol-Free.
-    3. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each.
-    4. RECOMMENDATIONS:
-      - First, provide the EXACT name of the product you identified in the image.
-      - Second, suggest NINE (9) highly-rated alternatives available on Amazon UK that are similar to this product.
+    1. Identify the specific product name.
+    2. Analyze ingredients for: Food Safety, Skin Health, Makeup Safety, Veg, Vegan, Halal, Alcohol-Free.
+    3. For 'Makeup Safety', specifically evaluate comedogenic (pore-clogging) levels, parabens, and synthetic fragrances.
+    4. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each category.
+    5. RECOMMENDATIONS:
+      - Provide the EXACT name of the identified product.
+      - Suggest NINE (9) highly-rated alternatives available on Amazon UK that are similar to this product.
 
     Return ONLY a JSON object:
     {
       "identifiedProduct": "Exact Product Name",
       "food": {"status": "string", "summary": "string"},
       "skin": {"status": "string", "summary": "string"},
+      "makeup": {"status": "string", "summary": "string"},
       "veg": {"status": "string", "summary": "string"},
       "vegan": {"status": "string", "summary": "string"},
       "halal": {"status": "string", "summary": "string"},
       "alcohol": {"status": "string", "summary": "string"},
-      "recommendations": ["Identified Product Name", "Alternative 1", "Alternative 2", "Alternative 3", "Alternative 4", , "Alternative 5", "Alternative 6", "Alternative 7", "Alternative 8", "Alternative 9"]
+      "recommendations": ["Identified Product", "Alt 1", "Alt 2", "Alt 3", "Alt 4", "Alt 5", "Alt 6", "Alt 7", "Alt 8", "Alt 9"]
     }
     `;
 
