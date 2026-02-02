@@ -33,7 +33,8 @@ export default async function handler(req: any, res: any) {
     const { base64Data } = req.body; // App sends the image here
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash-lite",
+      // model: "gemini-3-flash-preview",
       generationConfig: { responseMimeType: "application/json" },
     });
 
