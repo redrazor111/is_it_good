@@ -14,7 +14,7 @@ import {
 
 // Navigation & Safe Area Imports
 import { Ionicons } from '@expo/vector-icons';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Local Imports
@@ -29,7 +29,7 @@ import StatusCard from '../../components/StatusCard';
 import { analyzeImageWithGemini } from '../../utils/geminiService';
 import { useSubscriptionStatus } from '../../utils/subscription';
 
-const Tab = createBottomTabNavigator();
+const Tab = createMaterialTopTabNavigator();
 
 type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
@@ -277,7 +277,6 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
   );
 }
 
-// --- MAIN NAVIGATION WRAPPER ---
 function AppContent() {
   const insets = useSafeAreaInsets();
   const [scannedImage, setScannedImage] = useState<string | null>(null);
@@ -296,32 +295,57 @@ function AppContent() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       <Tab.Navigator
+        tabBarPosition="bottom"
         screenOptions={({ route }) => ({
-          headerShown: false,
           tabBarActiveTintColor: '#2E7D32',
           tabBarInactiveTintColor: '#9E9E9E',
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600', marginBottom: 5 },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600',
+            textTransform: 'none',
+            marginTop: 0, // Keeps label close to icon
+            paddingBottom: 5 // Space below the text
+          },
+          tabBarIndicatorStyle: { height: 0 },
           tabBarStyle: {
             backgroundColor: '#fff',
-            borderTopWidth: 0,
-            height: 65 + insets.bottom,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 10,
-            paddingTop: 10,
+            // Increase height slightly to give the icons "room" to move up
+            height: 75 + insets.bottom,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 5,
+            paddingTop: 5,
             shadowColor: "#000",
             shadowOffset: { width: 0, height: -4 },
             shadowOpacity: 0.05,
             shadowRadius: 8,
             elevation: 10,
           },
-          tabBarIcon: ({ color, size }) => {
+          swipeEnabled: true,
+          // We wrap the icon in a View to apply custom positioning
+          tabBarIcon: ({ color }) => {
             const iconName = iconMap[route.name] || 'help-circle-outline';
-            return <Ionicons name={iconName} size={size + 2} color={color} />;
+            return (
+              <View style={{ marginBottom: 2 }}>
+                <Ionicons name={iconName} size={26} color={color} />
+              </View>
+            );
+          },
+          // This setting is crucial for Material Top Tabs to align items correctly
+          tabBarItemStyle: {
+            flexDirection: 'column',
+            justifyContent: 'center',
+            height: 65, // Fixed height for the touchable area
           },
         })}
       >
         <Tab.Screen name="Camera">
-          {() => <CameraScreen onImageCaptured={setScannedImage} onRecommendationsFound={setRecommendations} pendingRerunUri={pendingRerunUri}
-            onRerunHandled={() => setPendingRerunUri(null)} />}
+          {() => (
+            <CameraScreen
+              onImageCaptured={setScannedImage}
+              onRecommendationsFound={setRecommendations}
+              pendingRerunUri={pendingRerunUri}
+              onRerunHandled={() => setPendingRerunUri(null)}
+            />
+          )}
         </Tab.Screen>
         <Tab.Screen name="Product">
           {() => <Ingredients imageUri={scannedImage} />}
