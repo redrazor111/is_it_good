@@ -33,7 +33,11 @@ export default function Ingredients({ imageUri }) {
             <View style={styles.card}>
               <View style={styles.imageContainer}>
                 <Image
-                  source={{ uri: `data:image/jpeg;base64,${imageUri}` }}
+                  source={{
+                    uri: imageUri?.startsWith('data:image')
+                      ? imageUri
+                      : `data:image/jpeg;base64,${imageUri}`
+                  }}
                   style={styles.image}
                   resizeMode="cover"
                 />
@@ -43,8 +47,8 @@ export default function Ingredients({ imageUri }) {
                   <MaterialCommunityIcons name="nutrition" size={20} color="#2E7D32" />
                 </View>
                 <View style={styles.productDetails}>
-                   <Text style={styles.productName}>Captured Ingredient Label</Text>
-                   <Text style={styles.viewOnAmazon}>High Resolution Analysis</Text>
+                  <Text style={styles.productName}>Captured Ingredient Label</Text>
+                  <Text style={styles.viewOnAmazon}>High Resolution Analysis</Text>
                 </View>
               </View>
             </View>

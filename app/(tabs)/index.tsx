@@ -20,6 +20,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 // Local Imports
 import { saveToHistory } from '@/utils/historyStorage';
 import { checkQuota, incrementQuota } from '@/utils/quotaService';
+import * as ImageManipulator from 'expo-image-manipulator';
 import Ingredients from '../../components/Ingredients';
 import PremiumModal from '../../components/PremiumModal';
 import ScanHistory from '../../components/ScanHistory';
@@ -120,10 +121,12 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
   };
 
   const handleScan = async (base64Data: string) => {
-    const status = await checkQuota();
-    if (status === 'LIMIT_REACHED') {
-      setShowPremium(true);
-      return;
+    if (!isPro) {
+      const status = await checkQuota();
+      if (status === 'LIMIT_REACHED') {
+        setShowPremium(true);
+        return;
+      }
     }
 
     setFoodAnalysis(initialState);
@@ -136,7 +139,8 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
     setIsLoading(true);
     lastImageRef.current = base64Data;
-    onImageCaptured(base64Data);
+    const cleanBase64 = base64Data.replace('data:image/jpeg;base64,', '');
+    onImageCaptured(cleanBase64);
 
     try {
       const rawResponse = await analyzeImageWithGemini(base64Data);
@@ -161,7 +165,14 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
       updateState(data.halal, setHalalAnalysis);
       updateState(data.alcohol, setAlcoholFreeAnalysis);
 
-      await saveToHistory(base64Data, data);
+      const compressedImage = await ImageManipulator.manipulateAsync(
+        base64Data.startsWith('data') ? base64Data : `data:image/jpeg;base64,${base64Data}`,
+        [{ resize: { width: 800 } }], // Resize to a reasonable width
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      // Use compressedImage.base64 to save to history
+      await saveToHistory(compressedImage.base64!, data);
     } catch (e) {
       console.error("Batch Analysis Failed", e);
       const errorState = { text: "Analysis failed", status: "#757575" };
@@ -173,10 +184,12 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
   };
 
   const handleRerun = async () => {
-    const status = await checkQuota();
-    if (status === 'LIMIT_REACHED') {
-      setShowPremium(true);
-      return;
+    if (!isPro) {
+      const status = await checkQuota();
+      if (status === 'LIMIT_REACHED') {
+        setShowPremium(true);
+        return;
+      }
     }
 
     if (lastImageRef.current) {
@@ -202,8 +215,8 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
   return (
     <View style={styles.cameraTabContainer}>
       <View style={[styles.header, { paddingTop: insets.top + 15 }]}>
-        <Text style={styles.title}>Scan Image</Text>
-        <Text style={styles.subtitle}>Scan ingredient label</Text>
+        <Text style={styles.title}>Capture Image</Text>
+        <Text style={styles.subtitle}>Take image of product or ingredients</Text>
       </View>
 
       <View style={styles.cameraViewHalf}>
@@ -245,27 +258,14 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollPadding} showsVerticalScrollIndicator={false}>
-          {isPro ? (
-            <>
-              <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
-              <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
-              <StatusCard
-                title="Makeup Safety"
-                data={makeupAnalysis}
-                icon="lipstick"
-                isParentLoading={isLoading}
-              />
-              <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} />
-              <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} />
-              <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} />
-              <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} />
-            </>
-          ) : (
-            <>
-              <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} />
-              <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} />
-            </>
-          )}
+          {/* These are ALWAYS available */}
+          <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} isLocked={false} />
+          <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} isLocked={false} />
+          <StatusCard title="Makeup Safety" data={makeupAnalysis} icon="lipstick" isParentLoading={isLoading} isLocked={!isPro} />
+          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} isLocked={!isPro} />
+          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} isLocked={!isPro} />
+          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} isLocked={!isPro} />
+          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} isLocked={!isPro} />
         </ScrollView>
       </View>
 
@@ -282,7 +282,6 @@ function AppContent() {
   const [scannedImage, setScannedImage] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<string[]>([]);
   const [pendingRerunUri, setPendingRerunUri] = useState<string | null>(null);
-  const { isPro } = useSubscriptionStatus();
 
   const iconMap: Record<string, IoniconsName> = {
     Camera: 'camera-outline',
@@ -297,19 +296,18 @@ function AppContent() {
       <Tab.Navigator
         tabBarPosition="bottom"
         screenOptions={({ route }) => ({
-          tabBarActiveTintColor: '#2E7D32',
+          tabBarActiveTintColor: '#1B4D20',
           tabBarInactiveTintColor: '#9E9E9E',
           tabBarLabelStyle: {
             fontSize: 11,
-            fontWeight: '600',
+            fontWeight: '700', // Slightly bolder for better visibility
             textTransform: 'none',
-            marginTop: 0, // Keeps label close to icon
-            paddingBottom: 5 // Space below the text
+            marginTop: 0,
+            paddingBottom: 5
           },
           tabBarIndicatorStyle: { height: 0 },
           tabBarStyle: {
             backgroundColor: '#fff',
-            // Increase height slightly to give the icons "room" to move up
             height: 75 + insets.bottom,
             paddingBottom: insets.bottom > 0 ? insets.bottom : 5,
             paddingTop: 5,
@@ -320,20 +318,23 @@ function AppContent() {
             elevation: 10,
           },
           swipeEnabled: true,
-          // We wrap the icon in a View to apply custom positioning
-          tabBarIcon: ({ color }) => {
+          tabBarIcon: ({ color, focused }) => {
             const iconName = iconMap[route.name] || 'help-circle-outline';
+            // Logic to use filled icons when focused for a "darker" look
+            const finalIconName = focused
+              ? iconName.replace('-outline', '') as IoniconsName
+              : iconName;
+
             return (
               <View style={{ marginBottom: 2 }}>
-                <Ionicons name={iconName} size={26} color={color} />
+                <Ionicons name={finalIconName} size={26} color={color} />
               </View>
             );
           },
-          // This setting is crucial for Material Top Tabs to align items correctly
           tabBarItemStyle: {
             flexDirection: 'column',
             justifyContent: 'center',
-            height: 65, // Fixed height for the touchable area
+            height: 65,
           },
         })}
       >
@@ -350,11 +351,18 @@ function AppContent() {
         <Tab.Screen name="Product">
           {() => <Ingredients imageUri={scannedImage} />}
         </Tab.Screen>
-        {isPro && (
-          <Tab.Screen name="History">
-            {() => <ScanHistory onTriggerRerun={(uri: string) => setPendingRerunUri(uri)} />}
-          </Tab.Screen>
-        )}
+        <Tab.Screen name="History">
+          {() => (
+            <ScanHistory
+              onTriggerRerun={(rawUri: string) => {
+                // 1. Update the image shown in the "Product" tab
+                setScannedImage(rawUri);
+                // 2. Trigger the Gemini analysis in the "Camera" tab
+                setPendingRerunUri(rawUri);
+              }}
+            />
+          )}
+        </Tab.Screen>
         <Tab.Screen name="Shop">
           {() => <Shop recommendedProducts={recommendations} />}
         </Tab.Screen>

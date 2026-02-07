@@ -57,8 +57,8 @@ export default function Shop({ recommendedProducts }) {
   return (
     <View style={[styles.fullScreen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Shop</Text>
-        <Text style={styles.subtitle}>Products found for you</Text>
+        <Text style={styles.title}>Shop at Amazon</Text>
+        <Text style={styles.subtitle}>Buy similar products from Amazon</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContentList} showsVerticalScrollIndicator={false}>

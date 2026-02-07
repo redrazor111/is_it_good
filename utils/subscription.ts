@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
+import Purchases, { CustomerInfo } from 'react-native-purchases';
+import { GOOGLE_API_KEY_IN_RC } from './constants';
 
-// Replace with your actual API Keys from the RevenueCat Dashboard
 const API_KEYS = {
-  apple: "appl_api_key_here",
-  google: "goog_api_key_here"
+  google: GOOGLE_API_KEY_IN_RC
 };
 
 export function useSubscriptionStatus() {
@@ -13,25 +13,31 @@ export function useSubscriptionStatus() {
   useEffect(() => {
     const setupAndCheckStatus = async () => {
       try {
-        // if (Platform.OS === 'ios') {
-        //   await Purchases.configure({ apiKey: API_KEYS.apple });
-        // } else {
-        //   await Purchases.configure({ apiKey: API_KEYS.google });
-        // }
+        // 1. Configure
+        await Purchases.configure({ apiKey: API_KEYS.google });
 
-        // const customerInfo: CustomerInfo = await Purchases.getCustomerInfo();
-        // const activeEntitlements = customerInfo.entitlements.active;
+        // 2. Initial check
+        const customerInfo: CustomerInfo = await Purchases.getCustomerInfo();
+        checkProStatus(customerInfo);
 
-        // if (activeEntitlements['premium'] !== undefined) {
-          setIsPro(true);
-        // } else {
-        //   setIsPro(false);
-        // }
+        // 3. Listen for changes (like if a purchase finishes or a refund happens)
+        const listener = (info: CustomerInfo) => checkProStatus(info);
+        Purchases.addCustomerInfoUpdateListener(listener);
+
       } catch (e) {
         console.error("Subscription check failed:", e);
         setIsPro(false);
       } finally {
         setLoading(false);
+      }
+    };
+
+    const checkProStatus = (info: CustomerInfo) => {
+      // Use 'unlimited_searches' or whatever you named your Entitlement
+      if (info.entitlements.active['unlimited_searches'] !== undefined) {
+        setIsPro(true);
+      } else {
+        setIsPro(false);
       }
     };
 

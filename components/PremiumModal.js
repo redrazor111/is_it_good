@@ -1,7 +1,64 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Purchases from 'react-native-purchases';
+import { GOOGLE_API_KEY_IN_RC, MAX_SEARCHES } from '../utils/constants';
 
 export default function PremiumModal({ visible, onClose }) {
+  const [packageToBuy, setPackageToBuy] = useState(null);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
+  useEffect(() => {
+    const loadOfferings = async () => {
+      try {
+        // 1. Safety Check: Ensure Purchases is configured
+        const isConfigured = await Purchases.isConfigured();
+        if (!isConfigured) {
+          // Replace with your actual RevenueCat Google Public API Key
+          await Purchases.configure({ apiKey: GOOGLE_API_KEY_IN_RC });
+        }
+
+        // 2. Fetch Offerings
+        const offerings = await Purchases.getOfferings();
+
+        if (offerings.current !== null && offerings.current.availablePackages.length > 0) {
+          setPackageToBuy(offerings.current.availablePackages[0]);
+        } else {
+          console.warn("RevenueCat: No current offerings found. Check your Dashboard.");
+        }
+      } catch (e) {
+        // 3. Alert the error so you can see it on your device
+        console.error("Error loading offerings", e);
+        if (visible) {
+          Alert.alert("Connection Error", "Could not load subscription price. Please check your internet.");
+        }
+      }
+    };
+
+    if (visible) loadOfferings();
+  }, [visible]);
+
+  const handleUpgrade = async () => {
+    if (!packageToBuy) return;
+
+    setIsPurchasing(true);
+    try {
+      const { customerInfo } = await Purchases.purchasePackage(packageToBuy);
+
+      // IMPORTANT: Ensure 'premium' matches your Entitlement ID in RevenueCat exactly
+      if (customerInfo.entitlements.active['premium'] !== undefined) {
+        Alert.alert("Success!", "Premium features unlocked.");
+        onClose();
+      }
+    } catch (e) {
+      if (!e.userCancelled) {
+        Alert.alert("Purchase Error", e.message);
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
@@ -12,15 +69,49 @@ export default function PremiumModal({ visible, onClose }) {
 
           <Text style={styles.title}>Unlock IsItGood? Premium</Text>
           <Text style={styles.description}>
-            You've reached your 2 daily scans. Upgrade to Premium for unlimited scans,
-            detailed health insights, and ad-free shopping.
+            You have reached your <Text style={styles.boldText}>{MAX_SEARCHES}</Text> daily scans. Upgrade to Premium for the following features:
           </Text>
 
-          <TouchableOpacity style={styles.upgradeBtn} onPress={() => {/* Logic for payment */}}>
-            <Text style={styles.upgradeText}>Go Premium for only - $0.99/month</Text>
+          <View style={styles.featureList}>
+            <View style={styles.featureItem}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+              <Text style={styles.featureText}>Unlimited Scans</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+              <Text style={styles.featureText}>Advanced Diet & Skin Insights</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+              <Text style={styles.featureText}>Halal Check</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+              <Text style={styles.featureText}>Vegan Check</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+              <Text style={styles.featureText}>Vegetarian Check</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.upgradeBtn, !packageToBuy && { backgroundColor: '#ccc' }]}
+            onPress={handleUpgrade}
+            disabled={!packageToBuy || isPurchasing}
+          >
+            {isPurchasing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.upgradeText}>
+                {packageToBuy
+                  ? `Upgrade for ${packageToBuy.product.priceString}/mo`
+                  : "Loading Price..."}
+              </Text>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
+          <TouchableOpacity style={styles.closeBtn} onPress={onClose} disabled={isPurchasing}>
             <Text style={styles.closeText}>Maybe Later</Text>
           </TouchableOpacity>
         </View>
@@ -35,8 +126,12 @@ const styles = StyleSheet.create({
   iconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF9C4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
   title: { fontSize: 22, fontWeight: '800', color: '#1A1A1A', textAlign: 'center' },
   description: { fontSize: 15, color: '#666', textAlign: 'center', marginVertical: 15, lineHeight: 22 },
-  upgradeBtn: { backgroundColor: '#2E7D32', width: '100%', padding: 16, borderRadius: 15, alignItems: 'center' },
+  boldText: { fontWeight: '800', color: '#1A1A1A' },
+  featureList: { alignSelf: 'stretch', marginBottom: 20 },
+  featureItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingLeft: 10 },
+  featureText: { fontSize: 14, color: '#444', marginLeft: 10, fontWeight: '500' },
+  upgradeBtn: { backgroundColor: '#2E7D32', width: '100%', padding: 18, borderRadius: 15, alignItems: 'center', shadowColor: '#2E7D32', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
   upgradeText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  closeBtn: { marginTop: 15 },
+  closeBtn: { marginTop: 20 },
   closeText: { color: '#9E9E9E', fontWeight: '600' }
 });
