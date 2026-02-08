@@ -2,15 +2,11 @@
   "expo": {
     "name": "IsItGood?",
     "slug": "is_it_good",
-    "version": "1.0.3",
-    "orientation": "portrait",
+    "version": "1.0.4",
     "icon": "./assets/images/icon.png",
     "scheme": "isitgood",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -20,7 +16,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.softywareai.is_it_good"
+      "package": "com.softywareai.is_it_good",
+      "permissions": [
+        "CAMERA",
+        "BILLING",
+        "INTERNET"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -35,7 +36,8 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

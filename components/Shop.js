@@ -1,44 +1,63 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Localization from 'expo-localization';
 import React from 'react';
 import { Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+// Comprehensive Amazon Global Map
+const AMAZON_CONFIG = {
+  US: { domain: 'amazon.com', tag: 'softywareai-20' },
+  GB: { domain: 'amazon.co.uk', tag: 'softywareai-21' },
+  CA: { domain: 'amazon.ca', tag: 'softywareai-20' },
+  DE: { domain: 'amazon.de', tag: 'softywareai-21' },
+  FR: { domain: 'amazon.fr', tag: 'softywareai-21' },
+  ES: { domain: 'amazon.es', tag: 'softywareai-21' },
+  IT: { domain: 'amazon.it', tag: 'softywareai-21' },
+  IN: { domain: 'amazon.in', tag: 'softywareai-21' },
+  JP: { domain: 'amazon.co.jp', tag: 'softywareai-22' },
+  AU: { domain: 'amazon.com.au', tag: 'softywareai-22' },
+  MX: { domain: 'amazon.com.mx', tag: 'softywareai-20' },
+  BR: { domain: 'amazon.com.br', tag: 'softywareai-20' },
+  NL: { domain: 'amazon.nl', tag: 'softywareai-21' },
+  PL: { domain: 'amazon.pl', tag: 'softywareai-21' },
+  SE: { domain: 'amazon.se', tag: 'softywareai-21' },
+  TR: { domain: 'amazon.com.tr', tag: 'softywareai-21' },
+  SG: { domain: 'amazon.sg', tag: 'softywareai-22' },
+  AE: { domain: 'amazon.ae', tag: 'softywareai-21' },
+  SA: { domain: 'amazon.sa', tag: 'softywareai-21' },
+  BE: { domain: 'amazon.com.be', tag: 'softywareai-21' },
+  EG: { domain: 'amazon.eg', tag: 'softywareai-21' },
+};
 
 export default function Shop({ recommendedProducts }) {
   const insets = useSafeAreaInsets();
-  const trackingId = "softywareai-21";
 
-  // Handles general Amazon Search for a specific product name
+  const locales = Localization.getLocales();
+  const countryCode = locales[0]?.regionCode || 'US';
+  const config = AMAZON_CONFIG[countryCode] || AMAZON_CONFIG.US;
+  const domain = config.domain;
+  const trackingId = config.tag;
+
   const openAmazonSearch = async (productName) => {
     const query = encodeURIComponent(productName);
-    const webUri = `https://www.amazon.co.uk/s?k=${query}&tag=${trackingId}`;
-    const ios = `amazon://www.amazon.co.uk/s?k=${query}&tag=${trackingId}`;
-    const android = `com.amazon.mobile.shopping://search/?k=${query}&tag=${trackingId}`;
+    const webUri = `https://www.${domain}/s?k=${query}&tag=${trackingId}`;
+    const androidIntent = `com.amazon.mobile.shopping://search/?k=${query}&tag=${trackingId}`;
 
     try {
       if (Platform.OS === 'android') {
-        const canOpen = await Linking.canOpenURL(android);
-        if (canOpen) {
-          await Linking.openURL(android);
-          return;
-        }
-      } else if(Platform.OS === 'ios') {
-        const canOpen = await Linking.canOpenURL(ios);
-        if (canOpen) {
-          await Linking.openURL(ios);
-          return;
-        }
+        await Linking.openURL(androidIntent);
+      } else {
+        await Linking.openURL(webUri);
       }
-      await Linking.openURL(webUri);
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      Linking.openURL(webUri);
+      Linking.openURL(`https://www.${domain}/?tag=${trackingId}`);
     }
   };
 
-  // Handles the main "Shop on Amazon" button
   const handleOpenAmazonHome = async () => {
-    const intentUri = `com.amazon.mobile.shopping://www.amazon.co.uk/?tag=${trackingId}`;
-    const webUri = `https://www.amazon.co.uk/?tag=${trackingId}`;
+    const intentUri = `com.amazon.mobile.shopping://www.${domain}/?tag=${trackingId}`;
+    const webUri = `https://www.${domain}/?tag=${trackingId}`;
 
     try {
       if (Platform.OS === 'android') {
@@ -49,22 +68,22 @@ export default function Shop({ recommendedProducts }) {
         }
       }
       await Linking.openURL(webUri);
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       Linking.openURL(webUri);
     }
   };
-
   return (
     <View style={[styles.fullScreen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Shop at Amazon</Text>
-        <Text style={styles.subtitle}>Buy similar products from Amazon</Text>
+        <Text style={styles.subtitle}>Sourced from Amazon {countryCode}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContentList} showsVerticalScrollIndicator={false}>
         {recommendedProducts.length > 0 && (
           <View style={styles.listContainer}>
-            <Text style={styles.sectionLabel}>RECOMMENDED PRODUCTS</Text>
+            <Text style={styles.sectionLabel}>FOUND PRODUCTS</Text>
             {recommendedProducts.map((product, index) => (
               <TouchableOpacity
                 key={index}
@@ -73,13 +92,11 @@ export default function Shop({ recommendedProducts }) {
                 activeOpacity={0.7}
               >
                 <View style={styles.productIconBg}>
-                  <MaterialCommunityIcons name="tag-outline" size={20} color="#2E7D32" />
+                  <MaterialCommunityIcons name="shopping" size={20} color="#2E7D32" />
                 </View>
                 <View style={styles.productDetails}>
-                  <Text style={styles.productName} numberOfLines={2}>
-                    {product}
-                  </Text>
-                  <Text style={styles.viewOnAmazon}>View Product Details</Text>
+                  <Text style={styles.productName} numberOfLines={2}>{product}</Text>
+                  <Text style={styles.viewOnAmazon}>Check price on Amazon</Text>
                 </View>
                 <MaterialCommunityIcons name="chevron-right" size={20} color="#CCC" />
               </TouchableOpacity>
@@ -89,19 +106,19 @@ export default function Shop({ recommendedProducts }) {
 
         <View style={styles.placeholderContainer}>
           <MaterialCommunityIcons
-            name={recommendedProducts.length > 0 ? "magnify" : "cart-outline"}
-            size={60}
+            name={recommendedProducts.length > 0 ? "magnify-expand" : "cart-off"}
+            size={64}
             color="#E0E0E0"
           />
           <Text style={styles.placeholderText}>
             {recommendedProducts.length > 0
-              ? "Looking for something else?"
-              : "Your products will appear here after a scan."}
+              ? "Not what you're looking for? Tap to search specifically on Amazon."
+              : "Scan a product to see recommended alternatives here."}
           </Text>
 
           <TouchableOpacity style={styles.amazonButton} onPress={handleOpenAmazonHome}>
             <MaterialCommunityIcons name="cart" size={20} color="#000" />
-            <Text style={styles.amazonButtonText}>Shop on Amazon</Text>
+            <Text style={styles.amazonButtonText}>Shop at Amazon {countryCode}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -109,6 +126,7 @@ export default function Shop({ recommendedProducts }) {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
         <Text style={styles.disclosureText}>
           As an Amazon Associate, I earn from qualifying purchases.
+          Support this app by shopping through these links!
         </Text>
       </View>
     </View>
@@ -116,59 +134,13 @@ export default function Shop({ recommendedProducts }) {
 }
 
 const styles = StyleSheet.create({
-  fullScreen: {
-    flex: 1,
-    backgroundColor: '#FBFBFB',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1A1A1A',
-    letterSpacing: -0.5
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#757575',
-    marginTop: 4,
-  },
-  scrollContentEmpty: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  scrollContentList: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  placeholderContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    textAlign: 'center',
-    color: '#9E9E9E',
-    marginTop: 15,
-    marginBottom: 25,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  listContainer: {
-    width: '100%',
-  },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#9E9E9E',
-    letterSpacing: 1,
-    marginBottom: 15,
-  },
+  fullScreen: { flex: 1, backgroundColor: '#FBFBFB' },
+  header: { paddingHorizontal: 20, paddingVertical: 15, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  title: { fontSize: 24, fontWeight: '800', color: '#1A1A1A', letterSpacing: -0.5 },
+  subtitle: { fontSize: 14, color: '#757575', marginTop: 4 },
+  scrollContentList: { padding: 20, paddingBottom: 40 },
+  listContainer: { width: '100%' },
+  sectionLabel: { fontSize: 12, fontWeight: '700', color: '#9E9E9E', letterSpacing: 1, marginBottom: 15 },
   productCard: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -176,76 +148,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    elevation: 2,
     borderWidth: 1,
     borderColor: '#F0F0F0',
-    // Shadow for iOS
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    // Elevation for Android
-    elevation: 2,
   },
-  productIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 15,
-  },
-  productDetails: {
-    flex: 1,
-    marginRight: 10,
-  },
-  productName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 2,
-  },
-  viewOnAmazon: {
-    fontSize: 12,
-    color: '#2E7D32',
-    fontWeight: '600',
-  },
-  amazonButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FF9900',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  amazonButtonText: {
-    color: '#000',
-    fontWeight: '700',
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  amazonLinkSmall: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-  },
-  amazonLinkSmallText: {
-    fontSize: 14,
-    color: '#757575',
-    marginRight: 5,
-  },
-  footer: {
-    paddingHorizontal: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    backgroundColor: '#fff',
-    paddingTop: 10,
-  },
-  disclosureText: {
-    fontSize: 11,
-    color: '#9E9E9E',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  }
+  productIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  productDetails: { flex: 1, marginRight: 10 },
+  productName: { fontSize: 15, fontWeight: '700', color: '#333', marginBottom: 2 },
+  viewOnAmazon: { fontSize: 12, color: '#2E7D32', fontWeight: '600' },
+  placeholderContainer: { alignItems: 'center', justifyContent: 'center', marginTop: 20 },
+  placeholderText: { textAlign: 'center', color: '#9E9E9E', marginTop: 15, marginBottom: 25, fontSize: 15, paddingHorizontal: 20 },
+  amazonButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FF9900', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 25 },
+  amazonButtonText: { color: '#000', fontWeight: '700', fontSize: 16, marginLeft: 8 },
+  footer: { paddingHorizontal: 20, borderTopWidth: 1, borderTopColor: '#EEEEEE', backgroundColor: '#fff', paddingTop: 10 },
+  disclosureText: { fontSize: 11, color: '#9E9E9E', textAlign: 'center', fontStyle: 'italic' }
 });

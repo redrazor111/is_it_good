@@ -11,14 +11,11 @@ export default function PremiumModal({ visible, onClose }) {
   useEffect(() => {
     const loadOfferings = async () => {
       try {
-        // 1. Safety Check: Ensure Purchases is configured
         const isConfigured = await Purchases.isConfigured();
         if (!isConfigured) {
-          // Replace with your actual RevenueCat Google Public API Key
           await Purchases.configure({ apiKey: GOOGLE_API_KEY_IN_RC });
         }
 
-        // 2. Fetch Offerings
         const offerings = await Purchases.getOfferings();
 
         if (offerings.current !== null && offerings.current.availablePackages.length > 0) {
@@ -27,10 +24,8 @@ export default function PremiumModal({ visible, onClose }) {
           console.warn("RevenueCat: No current offerings found. Check your Dashboard.");
         }
       } catch (e) {
-        // 3. Alert the error so you can see it on your device
-        console.error("Error loading offerings", e);
         if (visible) {
-          Alert.alert("Connection Error", "Could not load subscription price. Please check your internet.");
+          Alert.alert("Connection Error", "Could not load subscription price. Please check your internet." +e);
         }
       }
     };
