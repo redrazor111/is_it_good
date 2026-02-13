@@ -78,7 +78,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
       handleScan(pendingRerunUri);
       onRerunHandled();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRerunUri]);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     } else {
       scanLineAnim.stopAnimation();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   const handleReset = () => {
@@ -108,12 +108,12 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
   const getStatusColor = (jsonString: string) => {
     try {
-    const parsed = JSON.parse(jsonString);
-    const status = parsed.status?.toUpperCase();
-    if (status === "WAITING") return "#757575";
-    if (status === "UNSAFE") return "#FF5252";
-    if (status === "CAUTION") return "#FFB300";
-    if (status === "SAFE") return "#2E7D32";
+      const parsed = JSON.parse(jsonString);
+      const status = parsed.status?.toUpperCase();
+      if (status === "WAITING") return "#757575";
+      if (status === "UNSAFE") return "#FF5252";
+      if (status === "CAUTION") return "#FFB300";
+      if (status === "SAFE") return "#2E7D32";
     } catch {
       const upper = jsonString.toUpperCase();
       if (upper.includes("WAITING")) return "#757575";
@@ -147,7 +147,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     onImageCaptured(cleanBase64);
 
     try {
-const rawResponse = await analyzeImageWithGemini(base64Data, isPro);
+      const rawResponse = await analyzeImageWithGemini(base64Data, isPro);
       const data = JSON.parse(rawResponse);
       await incrementQuota();
       if (data.recommendations) {

@@ -39,13 +39,15 @@ export default async function handler(req: any, res: any) {
     const base64Content = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
     const imagePart = { inlineData: { data: base64Content, mimeType: "image/jpeg" } };
 
-    // Update the prompt based on user status
     const prompt = `
-    1. Identify the specific product name.
+    1. Identify the exact product name from the image.
     2. Analyze ingredients for: Food Safety and Skin Health.
     ${isPro ? `3. ALSO Analyze: Makeup Safety (comedogenic, parabens, fragrances), Veg, Vegan, Halal, Alcohol-Free.` : `3. SKIP analysis for Makeup, Veg, Vegan, Halal, and Alcohol.`}
     4. For analyzed categories, assign status (SAFE, CAUTION, UNSAFE) and a brief summary.
-    5. RECOMMENDATIONS: Provide product name and 9 Amazon UK alternatives.
+    5. RECOMMENDATIONS:
+       - The FIRST item in the list must be the 'Identified Product Name'.
+       - Follow it with NINE (9) alternatives available on Amazon.
+       - IMPORTANT: Sort these 9 alternatives by similarity to the original product (closest matches first).
 
     Return ONLY this JSON structure:
     {
@@ -57,7 +59,7 @@ export default async function handler(req: any, res: any) {
       "vegan": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
       "halal": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
       "alcohol": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
-      "recommendations": ["string"]
+      "recommendations": ["Identified Product", "Closest Match 1", "Closest Match 2", "Match 3", "Match 4", "Match 5", "Match 6", "Match 7", "Match 8", "Match 9"]
     }
     `;
 
