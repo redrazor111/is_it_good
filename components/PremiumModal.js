@@ -25,7 +25,7 @@ export default function PremiumModal({ visible, onClose }) {
         }
       } catch (e) {
         if (visible) {
-          Alert.alert("Connection Error", "Could not load subscription price. Please check your internet." +e);
+          Alert.alert("Connection Error", "Could not load subscription price. " + e);
         }
       }
     };
@@ -40,8 +40,8 @@ export default function PremiumModal({ visible, onClose }) {
     try {
       const { customerInfo } = await Purchases.purchasePackage(packageToBuy);
 
-      // IMPORTANT: Ensure 'premium' matches your Entitlement ID in RevenueCat exactly
-      if (customerInfo.entitlements.active['premium'] !== undefined) {
+      // Updated to match your specific Entitlement ID
+      if (customerInfo.entitlements.active['softywareai Pro'] !== undefined) {
         Alert.alert("Success!", "Premium features unlocked.");
         onClose();
       }
@@ -58,6 +58,16 @@ export default function PremiumModal({ visible, onClose }) {
     <Modal visible={visible} transparent animationType="slide">
       <View style={styles.overlay}>
         <View style={styles.modalContent}>
+
+          {/* Close X Button */}
+          <TouchableOpacity
+            style={styles.absCloseBtn}
+            onPress={onClose}
+            disabled={isPurchasing}
+          >
+            <MaterialCommunityIcons name="close" size={24} color="#9E9E9E" />
+          </TouchableOpacity>
+
           <View style={styles.iconBg}>
             <MaterialCommunityIcons name="crown" size={40} color="#FFD700" />
           </View>
@@ -68,26 +78,18 @@ export default function PremiumModal({ visible, onClose }) {
           </Text>
 
           <View style={styles.featureList}>
-            <View style={styles.featureItem}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
-              <Text style={styles.featureText}>Unlimited Scans</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
-              <Text style={styles.featureText}>Advanced Diet & Skin Insights</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
-              <Text style={styles.featureText}>Halal Check</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
-              <Text style={styles.featureText}>Vegan Check</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
-              <Text style={styles.featureText}>Vegetarian Check</Text>
-            </View>
+            {[
+              "Unlimited Scans",
+              "Advanced Diet & Skin Insights",
+              "Halal Check",
+              "Vegan Check",
+              "Vegetarian Check"
+            ].map((feature, index) => (
+              <View key={index} style={styles.featureItem}>
+                <MaterialCommunityIcons name="check-circle" size={18} color="#2E7D32" />
+                <Text style={styles.featureText}>{feature}</Text>
+              </View>
+            ))}
           </View>
 
           <TouchableOpacity
@@ -116,16 +118,49 @@ export default function PremiumModal({ visible, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 25 },
-  modalContent: { backgroundColor: '#fff', borderRadius: 25, padding: 25, alignItems: 'center' },
-  iconBg: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFF9C4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    padding: 25
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    padding: 25,
+    alignItems: 'center',
+    position: 'relative' // Required for absolute positioning of the X
+  },
+  absCloseBtn: {
+    position: 'absolute',
+    top: 15,
+    right: 15,
+    padding: 5,
+    zIndex: 10
+  },
+  iconBg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FFF9C4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20
+  },
   title: { fontSize: 22, fontWeight: '800', color: '#1A1A1A', textAlign: 'center' },
   description: { fontSize: 15, color: '#666', textAlign: 'center', marginVertical: 15, lineHeight: 22 },
   boldText: { fontWeight: '800', color: '#1A1A1A' },
   featureList: { alignSelf: 'stretch', marginBottom: 20 },
   featureItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingLeft: 10 },
   featureText: { fontSize: 14, color: '#444', marginLeft: 10, fontWeight: '500' },
-  upgradeBtn: { backgroundColor: '#2E7D32', width: '100%', padding: 18, borderRadius: 15, alignItems: 'center', shadowColor: '#2E7D32', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 },
+  upgradeBtn: {
+    backgroundColor: '#2E7D32',
+    width: '100%',
+    padding: 18,
+    borderRadius: 15,
+    alignItems: 'center',
+    elevation: 4
+  },
   upgradeText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   closeBtn: { marginTop: 20 },
   closeText: { color: '#9E9E9E', fontWeight: '600' }

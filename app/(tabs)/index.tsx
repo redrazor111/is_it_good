@@ -78,6 +78,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
       handleScan(pendingRerunUri);
       onRerunHandled();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingRerunUri]);
 
   useEffect(() => {
@@ -91,6 +92,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     } else {
       scanLineAnim.stopAnimation();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   const handleReset = () => {
@@ -106,13 +108,15 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
 
   const getStatusColor = (jsonString: string) => {
     try {
-      const parsed = JSON.parse(jsonString);
-      const status = parsed.status?.toUpperCase();
-      if (status === "UNSAFE") return "#FF5252";
-      if (status === "CAUTION") return "#FFB300";
-      if (status === "SAFE") return "#2E7D32";
+    const parsed = JSON.parse(jsonString);
+    const status = parsed.status?.toUpperCase();
+    if (status === "WAITING") return "#757575";
+    if (status === "UNSAFE") return "#FF5252";
+    if (status === "CAUTION") return "#FFB300";
+    if (status === "SAFE") return "#2E7D32";
     } catch {
       const upper = jsonString.toUpperCase();
+      if (upper.includes("WAITING")) return "#757575";
       if (upper.includes("UNSAFE")) return "#FF5252";
       if (upper.includes("CAUTION")) return "#FFB300";
       if (upper.includes("SAFE")) return "#2E7D32";
@@ -143,7 +147,7 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
     onImageCaptured(cleanBase64);
 
     try {
-      const rawResponse = await analyzeImageWithGemini(base64Data);
+const rawResponse = await analyzeImageWithGemini(base64Data, isPro);
       const data = JSON.parse(rawResponse);
       await incrementQuota();
       if (data.recommendations) {
@@ -258,14 +262,16 @@ function CameraScreen({ onImageCaptured, onRecommendationsFound,
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollPadding} showsVerticalScrollIndicator={false}>
-          {/* These are ALWAYS available */}
+          {/* ALWAYS available */}
           <StatusCard title="Safe to Eat" data={foodAnalysis} icon="food-apple" isParentLoading={isLoading} isLocked={false} />
           <StatusCard title="Skin Safety" data={skinAnalysis} icon="face-man-shimmer" isParentLoading={isLoading} isLocked={false} />
-          <StatusCard title="Makeup Safety" data={makeupAnalysis} icon="lipstick" isParentLoading={isLoading} isLocked={!isPro} />
-          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isLoading} isLocked={!isPro} />
-          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isLoading} isLocked={!isPro} />
-          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isLoading} isLocked={!isPro} />
-          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isLoading} isLocked={!isPro} />
+
+          {/* PREMIUM features: loading is only true if user IS pro. If not pro, we don't show the loading spinner on locked cards. */}
+          <StatusCard title="Makeup Safety" data={makeupAnalysis} icon="lipstick" isParentLoading={isPro && isLoading} isLocked={!isPro} />
+          <StatusCard title="Vegetarian" data={vegAnalysis} icon="leaf" isParentLoading={isPro && isLoading} isLocked={!isPro} />
+          <StatusCard title="Vegan" data={veganAnalysis} icon="sprout" isParentLoading={isPro && isLoading} isLocked={!isPro} />
+          <StatusCard title="Halal" data={halalAnalysis} icon="star-crescent" isParentLoading={isPro && isLoading} isLocked={!isPro} />
+          <StatusCard title="Alcohol Free" data={alcoholFreeAnalysis} icon="glass-cocktail-off" isParentLoading={isPro && isLoading} isLocked={!isPro} />
         </ScrollView>
       </View>
 

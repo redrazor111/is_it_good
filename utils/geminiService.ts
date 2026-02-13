@@ -1,23 +1,16 @@
 const VERCEL_API_URL = "https://is-it-good-pearl.vercel.app/api/analyze";
 
-export const analyzeImageWithGemini = async (base64Data: string) => {
+export const analyzeImageWithGemini = async (base64Data: string, isPro: boolean) => {
   try {
     const response = await fetch(VERCEL_API_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ base64Data }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64Data, isPro }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Server responded with ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Server responded with ${response.status}`);
     const data = await response.json();
-    // We return a string to match your existing app logic that uses JSON.parse()
     return JSON.stringify(data);
-
   } catch (error: any) {
     console.error("Frontend Service Error:", error);
 
