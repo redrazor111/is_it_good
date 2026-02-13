@@ -27,52 +27,42 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: "Server configuration missing API Key" });
   }
 
-  const genAI = new GoogleGenerativeAI(API_KEY);
-
   try {
-    const { base64Data } = req.body; // App sends the image here
+    const { base64Data, isPro } = req.body; // Receive pro status from app
 
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash-lite",
-      // model: "gemini-3-flash-preview",
       generationConfig: { responseMimeType: "application/json" },
     });
 
-    const base64Content = base64Data.includes(",")
-      ? base64Data.split(",")[1]
-      : base64Data;
+    const base64Content = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data;
+    const imagePart = { inlineData: { data: base64Content, mimeType: "image/jpeg" } };
 
-    const imagePart = {
-      inlineData: { data: base64Content, mimeType: "image/jpeg" },
-    };
-
+    // Update the prompt based on user status
     const prompt = `
     1. Identify the specific product name.
-    2. Analyze ingredients for: Food Safety, Skin Health, Makeup Safety, Veg, Vegan, Halal, Alcohol-Free.
-    3. For 'Makeup Safety', specifically evaluate comedogenic (pore-clogging) levels, parabens, and synthetic fragrances.
-    4. Assign status (SAFE, CAUTION, UNSAFE) and a brief summary for each category.
-    5. RECOMMENDATIONS:
-      - Provide the EXACT name of the identified product.
-      - Suggest NINE (9) highly-rated alternatives available on Amazon UK that are similar to this product.
+    2. Analyze ingredients for: Food Safety and Skin Health.
+    ${isPro ? `3. ALSO Analyze: Makeup Safety (comedogenic, parabens, fragrances), Veg, Vegan, Halal, Alcohol-Free.` : `3. SKIP analysis for Makeup, Veg, Vegan, Halal, and Alcohol.`}
+    4. For analyzed categories, assign status (SAFE, CAUTION, UNSAFE) and a brief summary.
+    5. RECOMMENDATIONS: Provide product name and 9 Amazon UK alternatives.
 
-    Return ONLY a JSON object:
+    Return ONLY this JSON structure:
     {
-      "identifiedProduct": "Exact Product Name",
+      "identifiedProduct": "string",
       "food": {"status": "string", "summary": "string"},
       "skin": {"status": "string", "summary": "string"},
-      "makeup": {"status": "string", "summary": "string"},
-      "veg": {"status": "string", "summary": "string"},
-      "vegan": {"status": "string", "summary": "string"},
-      "halal": {"status": "string", "summary": "string"},
-      "alcohol": {"status": "string", "summary": "string"},
-      "recommendations": ["Identified Product", "Alt 1", "Alt 2", "Alt 3", "Alt 4", "Alt 5", "Alt 6", "Alt 7", "Alt 8", "Alt 9"]
+      "makeup": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
+      "veg": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
+      "vegan": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
+      "halal": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
+      "alcohol": ${isPro ? `{"status": "string", "summary": "string"}` : `{"status": "WAITING", "summary": "Premium Feature"}`},
+      "recommendations": ["string"]
     }
     `;
 
     const result = await model.generateContent([prompt, imagePart]);
     const response = await result.response;
-
-    // Return the JSON directly to your app
     return res.status(200).json(JSON.parse(response.text()));
 
   } catch (error: any) {
