@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Localization from 'expo-localization';
 import React from 'react';
-import { Linking, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Comprehensive Amazon Global Map
@@ -38,37 +38,27 @@ export default function Shop({ recommendedProducts }) {
   const domain = config.domain;
   const trackingId = config.tag;
 
+  const webUri = `https://www.${domain}/?tag=${trackingId}`;
+
   const openAmazonSearch = async (productName) => {
     const query = encodeURIComponent(productName);
-    const webUri = `https://www.${domain}/s?k=${query}&tag=${trackingId}`;
-    const androidIntent = `com.amazon.mobile.shopping://search/?k=${query}&tag=${trackingId}`;
+    const affiliateUrl =
+      `https://www.${domain}/s?k=${query}&tag=${trackingId}`;
 
     try {
-      if (Platform.OS === 'android') {
-        await Linking.openURL(androidIntent);
-      } else {
-        await Linking.openURL(webUri);
-      }
+      await Linking.openURL(affiliateUrl);
       // eslint-disable-next-line no-unused-vars
     } catch (error) {
-      Linking.openURL(`https://www.${domain}/?tag=${trackingId}`);
+      Linking.openURL(webUri);
     }
   };
 
   const handleOpenAmazonHome = async () => {
     const intentUri = `com.amazon.mobile.shopping://www.${domain}/?tag=${trackingId}`;
-    const webUri = `https://www.${domain}/?tag=${trackingId}`;
 
     try {
-      if (Platform.OS === 'android') {
-        const canOpen = await Linking.canOpenURL(intentUri);
-        if (canOpen) {
-          await Linking.openURL(intentUri);
-          return;
-        }
-      }
-      await Linking.openURL(webUri);
-    // eslint-disable-next-line no-unused-vars
+      await Linking.openURL(intentUri);
+      // eslint-disable-next-line no-unused-vars
     } catch (error) {
       Linking.openURL(webUri);
     }
